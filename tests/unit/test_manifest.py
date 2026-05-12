@@ -9,7 +9,6 @@ import pytest
 
 from ont_end_reason.io.manifest import FileEntry, Manifest, ReadRecord
 
-
 pytestmark = pytest.mark.fast
 
 

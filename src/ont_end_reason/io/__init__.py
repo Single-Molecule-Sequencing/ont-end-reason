@@ -28,13 +28,13 @@ from .readers import (
 from .schema import SequencingSummarySchema, validate_summary
 
 __all__ = [
-    "discover",
     "Manifest",
     "ReadRecord",
-    "detect_format",
-    "extract_from_pod5",
-    "extract_from_fast5",
-    "extract_from_summary",
     "SequencingSummarySchema",
+    "detect_format",
+    "discover",
+    "extract_from_fast5",
+    "extract_from_pod5",
+    "extract_from_summary",
     "validate_summary",
 ]

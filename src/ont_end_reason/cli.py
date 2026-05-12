@@ -131,7 +131,7 @@ def tag(summary: str, bam: str, out: str, tag_name: str) -> None:
 )
 @click.option("--tag-name", default="ER", show_default=True)
 @click.option("--threads", default=1, type=int, show_default=True)
-def filter(bam: str, out: str, keep: str, tag_name: str, threads: int) -> None:  # noqa: A001 — CLI verb, not the builtin
+def filter(bam: str, out: str, keep: str, tag_name: str, threads: int) -> None:
     """Filter a tagged BAM by end_reason."""
     from .filter.filter import filter_bam
 
@@ -215,6 +215,7 @@ def analyze_distribution(
 
 # Scaffolded analyses — each calls its NotImplementedError counterpart and
 # the CLI gets a clean error message.
+
 
 def _scaffold_analyze(cli_name: str, module_name: str) -> click.Command:
     @click.command(cli_name)

@@ -1,0 +1,4 @@
+# file: /home/farnum248/repos/ont-end-reason/src/ont_end_reason/io/readers.py
+# hypothesis_version: 6.151.14
+
+[b'unknown', 10000, 100000, '*.fast5', '*.pod5', '.', '.fast5', '.pod5', '.txt', 'Raw', 'end_reason', 'fast5', 'fast5 read failed', 'mean_qscore_template', 'pod5', 'pod5 library missing', 'pod5 read failed', 'r', 'read_id', 'sequencing_summary', 'summary', 'unknown']

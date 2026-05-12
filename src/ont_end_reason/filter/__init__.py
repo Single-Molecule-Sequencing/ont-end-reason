@@ -18,4 +18,4 @@ from .export import export_fastq
 from .filter import filter_bam
 from .tag import tag_bam
 
-__all__ = ["tag_bam", "filter_bam", "export_fastq"]
+__all__ = ["export_fastq", "filter_bam", "tag_bam"]

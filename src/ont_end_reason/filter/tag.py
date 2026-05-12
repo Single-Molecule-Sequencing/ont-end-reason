@@ -13,9 +13,9 @@ Behaviour ports the canonical algorithm from
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
 
 import structlog
 
@@ -114,9 +114,7 @@ def tag_bam(
 
     try:
         with pysam.AlignmentFile(str(bam_path), "rb", check_sq=False) as bam_in:
-            with pysam.AlignmentFile(
-                str(output_path), "wb", template=bam_in
-            ) as bam_out:
+            with pysam.AlignmentFile(str(output_path), "wb", template=bam_in) as bam_out:
                 for read in bam_in.fetch(until_eof=True):
                     n_input += 1
                     read_id = read.query_name

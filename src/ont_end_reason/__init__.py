@@ -25,27 +25,29 @@ from .codes import (
 )
 from .errors import (
     AnalysisError,
-    IOError as OntIOError,
     OntEndReasonError,
     ValidationError,
 )
+from .errors import (
+    IOError as OntIOError,
+)
 
 __all__ = [
-    "__version__",
     # codes
     "CODES",
+    "FAILED",
     "NAMES",
     "RECOMMENDED_KEEP",
     "TRUNCATED",
-    "FAILED",
-    "parse_keep_list",
-    "to_short",
-    "to_full",
+    "AnalysisError",
     # errors
     "OntEndReasonError",
     "OntIOError",
-    "AnalysisError",
     "ValidationError",
+    "__version__",
+    "parse_keep_list",
+    "to_full",
+    "to_short",
 ]
 
 

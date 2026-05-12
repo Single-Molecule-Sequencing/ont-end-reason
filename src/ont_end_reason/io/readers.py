@@ -11,8 +11,9 @@ instead of plain dicts and ValueError.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 import structlog
 
@@ -26,17 +27,36 @@ log = structlog.get_logger(__name__)
 def _normalise_end_reason(reason: Any) -> str:
     """Coerce whatever the upstream library returns to the canonical lower-case
     ONT name (signal_positive, unblock_mux_change, ...).
+
+    Handles all observed shapes:
+      "signal_positive"
+      "EndReason.signal_positive"
+      "<EndReason.signal_positive: 4>"
+      "(<EndReason.signal_positive: 4>, forced=False)"  ← pod5 NamedTuple repr
+      EndReason enum members (any class with .name)
     """
+    import re
+
     if reason is None:
         return "unknown"
-    s = str(reason).strip().lower()
-    # POD5 sometimes returns `EndReason.signal_positive` enum-style
+    # Enum members have a .name attribute; use it directly when present
+    name_attr = getattr(reason, "name", None)
+    if name_attr and isinstance(name_attr, str):
+        return name_attr.lower()
+    s = str(reason).strip()
+    # Strip surrounding parens/angle-brackets and pod5's NamedTuple cruft
+    # Examples we want to reduce to the bare name:
+    #   "(<EndReason.signal_positive: 4>, forced=False)"
+    #   "<EndReason.signal_positive: 4>"
+    #   "EndReason.signal_positive"
+    match = re.search(r"EndReason\.(\w+)", s)
+    if match:
+        return match.group(1).lower()
+    # Fallback: take whatever follows the last dot, strip non-word chars
     if "." in s:
         s = s.rsplit(".", 1)[-1]
-    # Some legacy data uses `pore_unblocked` for unblock_mux_change
-    if s in CODES:
-        return s
-    return s  # let downstream code see the raw value and warn
+    s = re.sub(r"[^\w]", "", s).lower()
+    return s or "unknown"
 
 
 def detect_format(path: str | Path) -> str:
@@ -81,9 +101,7 @@ def extract_from_pod5(
     try:
         import pod5  # noqa: F401 - imported lazily inside this function
     except ImportError as exc:
-        raise OntIOError(
-            "POD5 reader requires the `pod5` package: pip install pod5"
-        ) from exc
+        raise OntIOError("POD5 reader requires the `pod5` package: pip install pod5") from exc
 
     p = Path(path)
     files = sorted(p.rglob("*.pod5")) if p.is_dir() else [p]
@@ -112,7 +130,7 @@ def extract_from_pod5(
                     )
                     if quick and len(out) >= max_reads:
                         return out
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             log.warning("pod5 read failed", path=str(f), error=str(exc))
             raise OntIOError(f"Failed to read POD5 {f}: {exc}") from exc
 
@@ -131,11 +149,9 @@ def extract_from_fast5(
     handles both single- and multi-read Fast5 files.
     """
     try:
-        import h5py  # noqa: F401
+        import h5py
     except ImportError as exc:
-        raise OntIOError(
-            "Fast5 reader requires h5py: pip install h5py"
-        ) from exc
+        raise OntIOError("Fast5 reader requires h5py: pip install h5py") from exc
 
     import h5py  # type: ignore[no-redef]
 
@@ -148,7 +164,7 @@ def extract_from_fast5(
     for f in files:
         try:
             with h5py.File(str(f), "r") as h5:
-                for read_group_name in h5.keys():
+                for read_group_name in h5:
                     grp = h5[read_group_name]
                     # End reason lives in the Raw/Reads attrs in older versions
                     raw = grp.get("Raw")
@@ -205,7 +221,9 @@ def extract_from_summary(
         for chunk in pd.read_csv(
             p,
             sep="\t",
-            usecols=lambda c: c in {"read_id", "end_reason", "sequence_length_template", "mean_qscore_template"},  # noqa: E501
+            usecols=lambda c: (
+                c in {"read_id", "end_reason", "sequence_length_template", "mean_qscore_template"}
+            ),
             chunksize=chunk_size,
             low_memory=False,
         ):
@@ -215,10 +233,8 @@ def extract_from_summary(
                     read_id=str(row.read_id),
                     end_reason=er,
                     end_reason_short=CODES.get(er),
-                    length=int(getattr(row, "sequence_length_template", 0) or 0)
-                    or None,
-                    quality=float(getattr(row, "mean_qscore_template", 0) or 0)
-                    or None,
+                    length=int(getattr(row, "sequence_length_template", 0) or 0) or None,
+                    quality=float(getattr(row, "mean_qscore_template", 0) or 0) or None,
                     source_file=str(p),
                     source_format="summary",
                 )

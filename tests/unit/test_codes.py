@@ -19,7 +19,6 @@ from ont_end_reason.codes import (
     to_short,
 )
 
-
 pytestmark = pytest.mark.fast
 
 
@@ -37,13 +36,13 @@ class TestCanonicalSet:
     def test_recommended_keep_is_signal_positive_only(self) -> None:
         # If you change this you are changing the paper's filtering policy.
         # Read the paper, bump the claim atoms, then update this test.
-        assert RECOMMENDED_KEEP == frozenset({"SP"})
+        assert frozenset({"SP"}) == RECOMMENDED_KEEP
 
     def test_failed_is_signal_negative_only(self) -> None:
-        assert FAILED == frozenset({"SN"})
+        assert frozenset({"SN"}) == FAILED
 
     def test_truncated_membership(self) -> None:
-        assert TRUNCATED == frozenset({"UMC", "MC", "DUMC", "PART"})
+        assert frozenset({"UMC", "MC", "DUMC", "PART"}) == TRUNCATED
 
     def test_class_disjoint(self) -> None:
         # Every code belongs to exactly one class.

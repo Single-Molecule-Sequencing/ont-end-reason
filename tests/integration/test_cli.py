@@ -10,7 +10,6 @@ from click.testing import CliRunner
 from ont_end_reason import __version__
 from ont_end_reason.cli import main
 
-
 pytestmark = pytest.mark.integration
 
 
@@ -94,9 +93,7 @@ class TestSubcommandHelp:
     )
     def test_help_works(self, runner: CliRunner, args: list[str]) -> None:
         result = runner.invoke(main, args)
-        assert result.exit_code == 0, (
-            f"`ont-end-reason {' '.join(args)}` failed: {result.output}"
-        )
+        assert result.exit_code == 0, f"`ont-end-reason {' '.join(args)}` failed: {result.output}"
 
 
 class TestScaffoldedAnalyses:

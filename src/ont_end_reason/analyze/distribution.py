@@ -14,9 +14,9 @@ ecosystem. It accepts any iterable of `ReadRecord` (typically from
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterable, Mapping
 
 from ..codes import CODES, NAMES
 from ..errors import AnalysisError
@@ -116,20 +116,14 @@ def distribution(
         if source.summaries:
             src_format = "summary"
             records = list(
-                extract_from_summary(
-                    source.summaries[0].path, quick=quick, max_reads=max_reads
-                )
+                extract_from_summary(source.summaries[0].path, quick=quick, max_reads=max_reads)
             )
         elif source.pod5:
             src_format = "pod5"
-            records = extract_from_pod5(
-                source.pod5[0].path, quick=quick, max_reads=max_reads
-            )
+            records = extract_from_pod5(source.pod5[0].path, quick=quick, max_reads=max_reads)
         elif source.fast5:
             src_format = "fast5"
-            records = extract_from_fast5(
-                source.fast5[0].path, quick=quick, max_reads=max_reads
-            )
+            records = extract_from_fast5(source.fast5[0].path, quick=quick, max_reads=max_reads)
         else:
             raise AnalysisError("Manifest has no POD5/Fast5/summary files")
     elif isinstance(source, (str, Path)):

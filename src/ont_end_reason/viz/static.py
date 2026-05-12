@@ -45,7 +45,7 @@ def plot_distribution(
     *,
     title: str | None = None,
     show_pct: bool = True,
-) -> "Figure":
+) -> Figure:
     """Bar chart of end-reason distribution.
 
     Parameters
@@ -73,7 +73,7 @@ def plot_distribution(
     bars = ax.bar(short_labels, values, color=colours, edgecolor="black", linewidth=0.5)
 
     if show_pct:
-        for bar, key, count in zip(bars, ordered_keys, values, strict=True):
+        for bar, key, _count in zip(bars, ordered_keys, values, strict=True):
             pct = result.percentages.get(key, 0.0) * 100
             ax.text(
                 bar.get_x() + bar.get_width() / 2,
@@ -87,10 +87,7 @@ def plot_distribution(
     ax.set_ylabel("Read count")
     ax.set_xlabel("End reason")
     if title is None:
-        title = (
-            f"End reason distribution — {result.quality_status}  "
-            f"(n = {result.total_reads:,})"
-        )
+        title = f"End reason distribution — {result.quality_status}  (n = {result.total_reads:,})"
     ax.set_title(title)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)

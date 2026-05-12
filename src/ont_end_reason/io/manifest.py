@@ -50,9 +50,7 @@ class Manifest:
     """
 
     root: str
-    generated_at: str = field(
-        default_factory=lambda: datetime.now(tz=timezone.utc).isoformat()
-    )
+    generated_at: str = field(default_factory=lambda: datetime.now(tz=timezone.utc).isoformat())
     generator: str = "ont-end-reason"
     pod5: list[FileEntry] = field(default_factory=list)
     fast5: list[FileEntry] = field(default_factory=list)

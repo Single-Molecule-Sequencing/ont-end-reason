@@ -11,4 +11,10 @@ so callers can mechanically swap static for interactive.
 
 from __future__ import annotations
 
-__all__: list[str] = []  # subpackages are accessed directly: viz.static / viz.interactive
+# Eagerly import submodules so `from ont_end_reason import viz; viz.interactive`
+# attribute access works. Static is always available (matplotlib is required);
+# interactive is OPTIONAL — its functions raise OntIOError with an install hint
+# if plotly is missing at call time, so importing the module is safe.
+from . import interactive, static
+
+__all__ = ["interactive", "static"]

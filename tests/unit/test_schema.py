@@ -13,7 +13,6 @@ from ont_end_reason.io.schema import (
     validate_summary,
 )
 
-
 pytestmark = pytest.mark.fast
 
 
@@ -31,9 +30,7 @@ class TestValidateSummary:
         assert not schema.missing_required
 
     def test_full_valid(self, tmp_path: Path) -> None:
-        path = _write_header(
-            tmp_path, sorted(REQUIRED_COLUMNS | RECOMMENDED_COLUMNS)
-        )
+        path = _write_header(tmp_path, sorted(REQUIRED_COLUMNS | RECOMMENDED_COLUMNS))
         schema = validate_summary(path)
         assert schema.is_valid
         assert not schema.missing_recommended
@@ -45,7 +42,7 @@ class TestValidateSummary:
         assert "end_reason" in schema.missing_required
 
     def test_extra_columns_reported(self, tmp_path: Path) -> None:
-        cols = sorted(REQUIRED_COLUMNS) + ["mystery_extra_column"]
+        cols = [*sorted(REQUIRED_COLUMNS), "mystery_extra_column"]
         path = _write_header(tmp_path, cols)
         schema = validate_summary(path)
         assert "mystery_extra_column" in schema.extra_columns

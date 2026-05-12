@@ -66,10 +66,7 @@ def filter_bam(
     except ImportError as exc:
         raise OntIOError("filter_bam requires pysam") from exc
 
-    if isinstance(keep, str):
-        keep_set = parse_keep_list(keep)
-    else:
-        keep_set = set(keep)
+    keep_set = parse_keep_list(keep) if isinstance(keep, str) else set(keep)
     if not keep_set:
         raise ValueError("keep is empty; nothing to retain")
 
@@ -82,23 +79,23 @@ def filter_bam(
 
     log.info("filter start", keep=sorted(keep_set), tag=tag_name, threads=threads)
     try:
-        with pysam.AlignmentFile(
-            str(bam_path), "rb", check_sq=False, threads=threads
-        ) as bam_in:
-            with pysam.AlignmentFile(
+        with (
+            pysam.AlignmentFile(str(bam_path), "rb", check_sq=False, threads=threads) as bam_in,
+            pysam.AlignmentFile(
                 str(output_path), "wb", template=bam_in, threads=threads
-            ) as bam_out:
-                for read in bam_in.fetch(until_eof=True):
-                    n_input += 1
-                    try:
-                        er_value = read.get_tag(tag_name)
-                    except KeyError:
-                        # Read has no tag — drop by default. Use a separate
-                        # `--keep-untagged` flag (future) to override.
-                        continue
-                    if str(er_value) in keep_set:
-                        bam_out.write(read)
-                        n_kept += 1
+            ) as bam_out,
+        ):
+            for read in bam_in.fetch(until_eof=True):
+                n_input += 1
+                try:
+                    er_value = read.get_tag(tag_name)
+                except KeyError:
+                    # Read has no tag — drop by default. Use a separate
+                    # `--keep-untagged` flag (future) to override.
+                    continue
+                if str(er_value) in keep_set:
+                    bam_out.write(read)
+                    n_kept += 1
     except OSError as exc:
         raise OntIOError(f"BAM I/O failed: {exc}") from exc
 

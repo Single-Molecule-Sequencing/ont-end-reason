@@ -9,7 +9,6 @@ import pytest
 from ont_end_reason.errors import IOError as OntIOError
 from ont_end_reason.io.discover import discover
 
-
 pytestmark = pytest.mark.fast
 
 

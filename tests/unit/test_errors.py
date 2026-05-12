@@ -6,11 +6,12 @@ import pytest
 
 from ont_end_reason.errors import (
     AnalysisError,
-    IOError as OntIOError,
     OntEndReasonError,
     ValidationError,
 )
-
+from ont_end_reason.errors import (
+    IOError as OntIOError,
+)
 
 pytestmark = pytest.mark.fast
 
@@ -27,7 +28,11 @@ class TestHierarchy:
 
     def test_subclasses_not_io_builtin(self) -> None:
         # Our IOError must NOT be the Python builtin; it's a separate type.
-        assert OntIOError is not __builtins__["IOError"] if isinstance(__builtins__, dict) else OntIOError is not __builtins__.IOError  # type: ignore[union-attr]
+        assert (
+            OntIOError is not __builtins__["IOError"]
+            if isinstance(__builtins__, dict)
+            else OntIOError is not __builtins__.IOError
+        )  # type: ignore[union-attr]
 
     def test_catch_via_base(self) -> None:
         with pytest.raises(OntEndReasonError):

@@ -72,6 +72,4 @@ def export_fastq(
 
     size = fastq_path.stat().st_size
     log.info("export complete", reads=n_written, bytes=size, path=str(fastq_path))
-    return ExportResult(
-        reads_written=n_written, bytes_written=size, output_path=str(fastq_path)
-    )
+    return ExportResult(reads_written=n_written, bytes_written=size, output_path=str(fastq_path))

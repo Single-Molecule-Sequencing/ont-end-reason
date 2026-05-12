@@ -16,7 +16,7 @@ class OntEndReasonError(Exception):
     """Base class for every error raised by ont-end-reason."""
 
 
-class IOError(OntEndReasonError):  # noqa: A001 — intentional shadow; subclass is enough to disambiguate
+class IOError(OntEndReasonError):
     """File/directory not found, unreadable, or in an unexpected format."""
 
 

@@ -38,7 +38,7 @@ _PALETTE = {
 }
 
 
-def _require_plotly() -> "type":
+def _require_plotly() -> type:
     try:
         import plotly.graph_objects as go
     except ImportError as exc:
@@ -53,7 +53,7 @@ def interactive_distribution(
     result: DistributionResult,
     *,
     title: str | None = None,
-) -> "Figure":
+) -> Figure:
     """Interactive bar chart of end-reason distribution with hover details."""
     go = _require_plotly()
 
@@ -67,8 +67,7 @@ def interactive_distribution(
     pcts = [result.percentages.get(k, 0.0) * 100 for k in ordered_keys]
     colours = [_PALETTE.get(k, "#cccccc") for k in ordered_keys]
     hover_text = [
-        f"<b>{k}</b><br>{counts[i]:,} reads<br>{pcts[i]:.2f}%"
-        for i, k in enumerate(ordered_keys)
+        f"<b>{k}</b><br>{counts[i]:,} reads<br>{pcts[i]:.2f}%" for i, k in enumerate(ordered_keys)
     ]
 
     fig = go.Figure(
@@ -86,10 +85,7 @@ def interactive_distribution(
     )
     fig.update_layout(
         title=title
-        or (
-            f"End reason distribution — {result.quality_status}  "
-            f"(n = {result.total_reads:,})"
-        ),
+        or (f"End reason distribution — {result.quality_status}  (n = {result.total_reads:,})"),
         xaxis_title="End reason",
         yaxis_title="Read count",
         showlegend=False,
