@@ -234,7 +234,50 @@ def _scaffold_analyze(cli_name: str, module_name: str) -> click.Command:
     return cmd
 
 
-analyze.add_command(_scaffold_analyze("sma-metrics", "sma_metrics"))
+@analyze.command("sma-metrics")
+@click.argument("source", type=click.Path(exists=True))
+@click.option("--json", "json_out", type=click.Path(), default=None)
+def analyze_sma_metrics(source: str, json_out: str | None) -> None:
+    """SMA per-read metrics (delegates to the smaseq-qc package if installed)."""
+    from .analyze.sma_metrics import sma_metrics as do_sma
+
+    result = do_sma(source)
+    click.echo(f"Available:    {result.available}")
+    click.echo(f"Delegated to: {result.delegated_to}")
+    for n in result.notes:
+        click.echo(f"  - {n}")
+    if json_out:
+        Path(json_out).parent.mkdir(parents=True, exist_ok=True)
+        Path(json_out).write_text(json.dumps(result.to_dict(), indent=2))
+
+
+@analyze.command("tables")
+@click.argument("source", type=click.Path(exists=True))
+@click.option("--name", required=True,
+              type=click.Choice(["summary", "per_class", "quality"]))
+@click.option("--format", "fmt", default="markdown",
+              type=click.Choice(["tsv", "csv", "markdown", "latex"]),
+              show_default=True)
+@click.option("--out", "out_path", type=click.Path(), default=None,
+              help="Write rendered table to this path; omit to print to stdout.")
+def analyze_tables(source: str, name: str, fmt: str, out_path: str | None) -> None:
+    """Generate a paper-table from an analysis result.
+
+    Examples:
+      ont-end-reason analyze tables <summary> --name summary --format markdown
+      ont-end-reason analyze tables <summary> --name per_class --format tsv --out per_class.tsv
+    """
+    from .analyze.tables import generate_tables, render_table
+
+    try:
+        table = generate_tables(source, name=name, fmt=fmt)
+    except OntEndReasonError as exc:
+        _die(str(exc))
+    text = render_table(table, out_path)
+    if out_path:
+        click.echo(f"Wrote {out_path}")
+    else:
+        click.echo(text)
 
 
 @analyze.command("umc-posterior")
