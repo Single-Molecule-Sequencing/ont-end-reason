@@ -37,12 +37,17 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     # PyPI trusted publishing (OIDC, no API token needed).
-    # Configure once at https://pypi.org/manage/account/publishing/ binding:
+    # Configure ONCE at https://pypi.org/manage/account/publishing/ with:
     #   project name: ont-end-reason
-    #   owner: Single-Molecule-Sequencing
-    #   repo: ont-end-reason
-    #   workflow: release.yml
-    #   environment: pypi
+    #   owner:        Single-Molecule-Sequencing
+    #   repo:         ont-end-reason
+    #   workflow:     release.yml
+    #   environment:  pypi
+    # Until that's configured, this job will fail with "OIDC token not found"
+    # — that's expected. The github-release job below still runs because it
+    # only depends on `build`. continue-on-error means this job's failure
+    # does not block the release tag.
+    continue-on-error: true
     environment:
       name: pypi
       url: https://pypi.org/p/ont-end-reason
@@ -55,24 +60,60 @@ jobs:
           path: dist
 
       - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true
 
   github-release:
-    needs: publish-pypi
+    # Depends ONLY on build, not on publish-pypi — so a GitHub Release ships
+    # even when PyPI trusted publisher isn't configured yet.
+    needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # so generate-notes can read full history
+
       - uses: actions/download-artifact@v4
         with:
           name: distributions
           path: dist
 
+      - name: Extract CHANGELOG section for release notes
+        id: notes
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          NOTES_FILE="$(mktemp)"
+          if python3 -c "
+          import re, pathlib, sys
+          tag = '${TAG}'.lstrip('v')
+          text = pathlib.Path('CHANGELOG.md').read_text()
+          m = re.search(rf'## \[{re.escape(tag)}\][^\n]*\n(.*?)(?=\n## \[|\Z)', text, re.DOTALL)
+          if m:
+              print(m.group(1).strip())
+              sys.exit(0)
+          sys.exit(1)
+          " > "$NOTES_FILE" && [ -s "$NOTES_FILE" ]; then
+            echo "notes_file=$NOTES_FILE" >> "$GITHUB_OUTPUT"
+            echo "have_notes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "have_notes=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "${GITHUB_REF#refs/tags/}" \
-              --title "${GITHUB_REF#refs/tags/}" \
-              --generate-notes \
-              dist/*
+          TAG="${GITHUB_REF#refs/tags/}"
+          if [ "${{ steps.notes.outputs.have_notes }}" = "true" ]; then
+            gh release create "$TAG" \
+                --title "$TAG" \
+                --notes-file "${{ steps.notes.outputs.notes_file }}" \
+                dist/*
+          else
+            gh release create "$TAG" \
+                --title "$TAG" \
+                --generate-notes \
+                dist/*
+          fi
