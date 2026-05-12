@@ -115,6 +115,14 @@ src = ["src", "tests"]
 select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "C4", "RUF"]
 ignore = [
     "E501",  # line length handled by formatter
+    # Scientific notation in docstrings is intentional. Mathematical symbols
+    # (−, ×, ·, ≥, ∝, Δ, σ, μ) read more naturally to scientific audiences than
+    # ASCII equivalents would. Code itself stays ASCII; this is docstrings only.
+    "RUF002",
+    # Variable naming: `F` for CDF, `one_minus_F` for survival function — these
+    # are mathematical conventions in statistical code and clearer than the
+    # snake_case alternatives would be.
+    "N806",
 ]
 
 [tool.ruff.lint.per-file-ignores]
