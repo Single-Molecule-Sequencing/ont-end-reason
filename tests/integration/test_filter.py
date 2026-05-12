@@ -192,3 +192,87 @@ def test_supported_end_reasons_includes_canonical_codes() -> None:
     codes = list(supported_end_reasons())
     for expected in ("SP", "UMC", "MC", "DUMC", "SN"):
         assert expected in codes
+
+
+def test_filter_parallel_below_threshold_falls_back_to_sequential(tmp_path: Path) -> None:
+    """Small BAMs (under MIN_READS_FOR_PARALLEL bytes) skip parallel path."""
+    from ont_end_reason.filter.filter import MIN_READS_FOR_PARALLEL
+
+    assert MIN_READS_FOR_PARALLEL > 0
+    read_ids = _read_first_n_ids(FIXTURE_SUMMARY, 10)
+    raw = tmp_path / "raw.bam"
+    _make_unaligned_bam(raw, read_ids)
+    tagged = tmp_path / "tagged.bam"
+    tag_bam(FIXTURE_SUMMARY, raw, tagged)
+
+    out = tmp_path / "kept.bam"
+    res = filter_bam(tagged, out, keep="SP", threads=4)
+    assert res.input_reads == 10
+    assert out.exists()
+
+
+def test_filter_parallel_matches_sequential_output(tmp_path: Path) -> None:
+    """Parallel filter must return identical kept-read sets as sequential.
+
+    Forces parallel by lowering MIN_READS_FOR_PARALLEL for the duration
+    of the test. Compares query_name sets — order can differ across the
+    pysam.cat shard concat versus a single-pass scan, but the underlying
+    kept set must be bit-identical.
+    """
+    import ont_end_reason.filter.filter as filter_mod
+
+    read_ids = _read_first_n_ids(FIXTURE_SUMMARY, 200)
+    raw = tmp_path / "raw.bam"
+    _make_unaligned_bam(raw, read_ids)
+    tagged = tmp_path / "tagged.bam"
+    tag_bam(FIXTURE_SUMMARY, raw, tagged)
+
+    seq_out = tmp_path / "seq.bam"
+    seq_res = filter_bam(tagged, seq_out, keep="SP,UMC", threads=1)
+
+    original_min = filter_mod.MIN_READS_FOR_PARALLEL
+    filter_mod.MIN_READS_FOR_PARALLEL = 1
+    try:
+        par_out = tmp_path / "par.bam"
+        par_res = filter_bam(tagged, par_out, keep="SP,UMC", threads=2, shard_size=50)
+    finally:
+        filter_mod.MIN_READS_FOR_PARALLEL = original_min
+
+    assert seq_res.input_reads == par_res.input_reads == 200
+    assert seq_res.kept_reads == par_res.kept_reads
+    assert seq_res.dropped_reads == par_res.dropped_reads
+    assert seq_res.keep_codes == par_res.keep_codes
+
+    def _collect_query_names(bam: Path) -> set[str]:
+        with pysam.AlignmentFile(str(bam), "rb", check_sq=False) as fh:
+            return {r.query_name for r in fh.fetch(until_eof=True)}
+
+    assert _collect_query_names(seq_out) == _collect_query_names(par_out)
+
+
+def test_scan_shard_boundaries_returns_n_shards(tmp_path: Path) -> None:
+    """Boundary scan produces approximately the requested shard count."""
+    from ont_end_reason.filter.filter import _scan_shard_boundaries
+
+    read_ids = _read_first_n_ids(FIXTURE_SUMMARY, 100)
+    raw = tmp_path / "raw.bam"
+    _make_unaligned_bam(raw, read_ids)
+
+    pairs = _scan_shard_boundaries(raw, n_shards=4, target_reads_per_shard=25)
+    assert 2 <= len(pairs) <= 4
+    assert pairs[0][0] >= 0
+    assert pairs[-1][1] is None
+    for i in range(len(pairs) - 1):
+        assert pairs[i][1] == pairs[i + 1][0]
+
+
+def test_scan_shard_boundaries_degenerate_small_input(tmp_path: Path) -> None:
+    """Inputs smaller than one shard return a single (start, None) pair."""
+    from ont_end_reason.filter.filter import _scan_shard_boundaries
+
+    read_ids = _read_first_n_ids(FIXTURE_SUMMARY, 3)
+    raw = tmp_path / "raw.bam"
+    _make_unaligned_bam(raw, read_ids)
+    pairs = _scan_shard_boundaries(raw, n_shards=8, target_reads_per_shard=1000)
+    assert len(pairs) == 1
+    assert pairs[0][1] is None
