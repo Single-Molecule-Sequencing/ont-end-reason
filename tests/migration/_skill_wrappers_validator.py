@@ -15,7 +15,7 @@ import json
 import subprocess
 import sys
 import tempfile
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -149,8 +149,8 @@ def run_test(test: dict) -> TestResult:
         legacy_args = [a.format(outdir=ldir) for a in test["args"]]
         new_args = [a.format(outdir=ndir) for a in test["args"]]
 
-        lc, lo, le = run(["python3", str(LEGACY), *legacy_args])
-        nc, no, ne = run(["python3", str(NEW), *new_args])
+        lc, _lo, le = run(["python3", str(LEGACY), *legacy_args])
+        nc, _no, ne = run(["python3", str(NEW), *new_args])
 
         r = TestResult(
             name=name,
@@ -168,12 +168,10 @@ def run_test(test: dict) -> TestResult:
 
 def evaluate(test: dict, r: TestResult) -> tuple[bool, list[str]]:
     issues = []
-    if test.get("expect_exit_nonzero"):
-        if r.new_exit == 0:
-            issues.append(f"new should exit nonzero, got {r.new_exit}")
-    elif test.get("expect_exit") is not None:
-        if r.new_exit != test["expect_exit"]:
-            issues.append(f"new exit={r.new_exit} != expected {test['expect_exit']}")
+    if test.get("expect_exit_nonzero") and r.new_exit == 0:
+        issues.append(f"new should exit nonzero, got {r.new_exit}")
+    elif test.get("expect_exit") is not None and r.new_exit != test["expect_exit"]:
+        issues.append(f"new exit={r.new_exit} != expected {test['expect_exit']}")
 
     if "compare_keys" in test:
         if r.legacy_json is None:
@@ -187,13 +185,11 @@ def evaluate(test: dict, r: TestResult) -> tuple[bool, list[str]]:
                 if not numbers_equiv(lv, nv):
                     issues.append(f"{k}: legacy={lv!r} != new={nv!r}")
 
-    if test.get("check_plot"):
-        if not r.plot_new_exists:
-            issues.append("new wrapper did not produce plot")
+    if test.get("check_plot") and not r.plot_new_exists:
+        issues.append("new wrapper did not produce plot")
 
-    if test.get("expect_warning"):
-        if "warning" not in r.new_stderr.lower():
-            issues.append("no deprecation warning emitted")
+    if test.get("expect_warning") and "warning" not in r.new_stderr.lower():
+        issues.append("no deprecation warning emitted")
 
     return (len(issues) == 0, issues)
 
