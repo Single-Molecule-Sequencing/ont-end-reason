@@ -131,12 +131,23 @@ def tag(summary: str, bam: str, out: str, tag_name: str) -> None:
 )
 @click.option("--tag-name", default="ER", show_default=True)
 @click.option("--threads", default=1, type=int, show_default=True)
-def filter(bam: str, out: str, keep: str, tag_name: str, threads: int) -> None:
+@click.option(
+    "--shard-size",
+    default=100_000,
+    type=int,
+    show_default=True,
+    help="Target reads per shard when threads >= 2 (parallel mode).",
+)
+def filter(
+    bam: str, out: str, keep: str, tag_name: str, threads: int, shard_size: int
+) -> None:
     """Filter a tagged BAM by end_reason."""
     from .filter.filter import filter_bam
 
     try:
-        result = filter_bam(bam, out, keep, tag_name=tag_name, threads=threads)
+        result = filter_bam(
+            bam, out, keep, tag_name=tag_name, threads=threads, shard_size=shard_size
+        )
     except OntEndReasonError as exc:
         _die(str(exc))
     click.echo(

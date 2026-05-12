@@ -131,7 +131,7 @@ Posterior bonus total:       2,965,111 bp     ← ~3 Mb of unobserved sequence
 |---|---|
 | `ont-end-reason discover <path>` | Walk a directory, inventory POD5 / Fast5 / summary / BAM / FASTQ files |
 | `ont-end-reason tag` | Add end_reason tag to BAM reads from sequencing_summary.txt |
-| `ont-end-reason filter` | Keep / drop BAM reads by end_reason short code |
+| `ont-end-reason filter` | Keep / drop BAM reads by end_reason short code (parallel sharded, `--threads N`) |
 | `ont-end-reason export-fastq` | Convert filtered BAM → FASTQ for NanoPack tools |
 | `ont-end-reason stats` | Streaming QC summary from sequencing_summary.txt |
 
@@ -232,18 +232,48 @@ Aggregated, this is the paper's headline "sequence lost to adaptive sampling" es
 ## Testing
 
 ```bash
-pytest                       # 143 tests, ~10s
-pytest --cov=ont_end_reason  # with coverage (currently 63%)
+pytest                       # 175 tests, ~40s
+pytest --cov=ont_end_reason  # with coverage (currently 71%)
 ruff check .                 # lint
 mypy src/ont_end_reason      # type-check
 ```
 
-Coverage gate is 60% in CI; target is 70% in v0.3.0 once `filter/` is exercised with a real BAM fixture (issue [#7](https://github.com/Single-Molecule-Sequencing/ont-end-reason/issues/7)).
+Coverage gate is 69% in CI (1 pp below actual, to absorb cross-platform variance).
 
 Tests run against:
 - **Synthetic fixture** ([5000 reads, deterministic distributions](tests/fixtures/sequencing_summary_synthetic.txt)) for every analysis
 - **Hypothesis property tests** for the SP/UMC/MC taxonomy (round-trips, classification disjointness)
 - **CliRunner integration tests** for every subcommand's `--help` and dispatch
+- **Real-data smoke** against the AWG074 MinION run (1,571 tagged reads → 1,451 SP / 89 UMC / 31 SN)
+
+---
+
+## Performance
+
+The `filter` subcommand runs sequential by default; `--threads N` engages a parallel
+sharded path for inputs above ~50k reads:
+
+- **Shard boundaries** are placed by virtual offset (`bam.tell()`) during a single
+  sequential scan — workers `seek()` directly to their slice, avoiding the original
+  port's O(N²/2) linear-skip pattern.
+- **Shard merge** uses `pysam.cat`, which splices BGZF blocks without re-decompressing.
+- **Auto-fallback** to sequential below `MIN_READS_FOR_PARALLEL` (50k reads) — worker-pool
+  setup outweighs the gain on small inputs.
+- **Bit-identical output**: enforced by an integration test that compares kept-read
+  sets across both paths on every CI run.
+
+Synthetic micro-bench (`bench/bench_parallel_filter.py`, ONT-shaped 2 kb reads,
+8-core dev machine):
+
+| n_reads | threads | shard_size | shards | seq_s | par_s | speedup |
+|---:|:---:|---:|:---:|---:|---:|:---:|
+| 20,000 | 4 | 2,000 | 2 | 0.02 | 0.05 | 0.45× *(below threshold)* |
+| 100,000 | 4 | 12,500 | 9 | 0.78 | 0.72 | 1.08× |
+| 300,000 | 4 | 37,500 | 9 | 2.14 | 1.91 | 1.12× |
+
+Speedup is intentionally modest at this workload — pysam already pipelines BGZF
+decompression internally, so the worker pool only parallelizes tag-lookup + write.
+Larger gains expected on multi-GB real ONT BAMs where per-record CPU cost is higher.
 
 ---
 

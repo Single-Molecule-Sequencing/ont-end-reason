@@ -96,6 +96,34 @@ class TestSubcommandHelp:
         assert result.exit_code == 0, f"`ont-end-reason {' '.join(args)}` failed: {result.output}"
 
 
+class TestFilterCLISurface:
+    """Catches CLI-vs-API drift on the filter subcommand."""
+
+    def test_shard_size_is_exposed(self, runner: CliRunner) -> None:
+        """--shard-size must be a real flag, not just a Python kwarg.
+
+        Regression test for a real bug: the parallel sharded filter was
+        shipped with --shard-size on filter_bam() but the click decorator
+        didn't expose it, so the CLI rejected the flag. Caught during
+        real-data validation on AWG074.
+        """
+        result = runner.invoke(main, ["filter", "--help"])
+        assert result.exit_code == 0
+        assert "--shard-size" in result.output
+        assert "--threads" in result.output
+
+    def test_filter_rejects_unknown_keep_codes(self, runner: CliRunner, tmp_path: Path) -> None:
+        """An obviously-bad --keep value should fail fast rather than silently
+        drop every read."""
+        empty_bam = tmp_path / "empty.bam"
+        empty_bam.touch()
+        result = runner.invoke(
+            main,
+            ["filter", "--bam", str(empty_bam), "--out", str(tmp_path / "o.bam"), "--keep", ""],
+        )
+        assert result.exit_code != 0
+
+
 class TestAllAnalysesImplemented:
     """Every analyze subcommand is now wired (no more v0.2.0 scaffolds)."""
 
