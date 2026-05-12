@@ -135,9 +135,7 @@ def plot_length_distribution(
         ax.set_xscale("log")
     ax.set_xlabel("Read length (bp)")
     ax.set_ylabel("Read count")
-    ax.set_title(
-        title or f"Read length distribution by end_reason (n = {result.total_reads:,})"
-    )
+    ax.set_title(title or f"Read length distribution by end_reason (n = {result.total_reads:,})")
     ax.legend(frameon=False, fontsize=8)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
@@ -167,9 +165,7 @@ def plot_temporal(
         if k not in ordered:
             ordered.append(k)
 
-    data_dict = (
-        result.fractions_by_class if show_fractions else result.counts_by_class
-    )
+    data_dict = result.fractions_by_class if show_fractions else result.counts_by_class
     stack = np.array([data_dict[k] for k in ordered], dtype=float)
     colours = [_PALETTE.get(k, "#cccccc") for k in ordered]
     labels = [CODES.get(k, k) for k in ordered]
@@ -177,9 +173,7 @@ def plot_temporal(
 
     ax.set_xlabel("Time since run start (hours)")
     ax.set_ylabel("Fraction of reads" if show_fractions else "Read count")
-    ax.set_title(
-        title or f"End reason rates over time  (n = {result.total_reads:,})"
-    )
+    ax.set_title(title or f"End reason rates over time  (n = {result.total_reads:,})")
     ax.legend(loc="upper right", frameon=False, fontsize=8)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
@@ -228,8 +222,8 @@ def plot_quality_violins(result, *, title: str | None = None):
 
 def plot_umc_posterior(result, *, title: str | None = None):
     """Two-panel plot of UMC posterior:
-       left  — observed length histogram vs posterior expected true length histogram
-       right — per-read "bonus" (E[true] − observed) distribution
+    left  — observed length histogram vs posterior expected true length histogram
+    right — per-read "bonus" (E[true] − observed) distribution
     """
     import matplotlib.pyplot as plt
     import numpy as np
@@ -246,10 +240,17 @@ def plot_umc_posterior(result, *, title: str | None = None):
     obs_implied = means - bonuses  # reconstruct observed from per-read means
 
     bins = np.logspace(np.log10(100), np.log10(50_000), 50)
-    ax1.hist(obs_implied, bins=bins, alpha=0.65, color="#ff7f0e",
-             label=f"Observed (n={result.n_umc_reads:,})", edgecolor="none")
-    ax1.hist(means, bins=bins, alpha=0.65, color="#2ca02c",
-             label="Posterior E[true]", edgecolor="none")
+    ax1.hist(
+        obs_implied,
+        bins=bins,
+        alpha=0.65,
+        color="#ff7f0e",
+        label=f"Observed (n={result.n_umc_reads:,})",
+        edgecolor="none",
+    )
+    ax1.hist(
+        means, bins=bins, alpha=0.65, color="#2ca02c", label="Posterior E[true]", edgecolor="none"
+    )
     ax1.set_xscale("log")
     ax1.set_xlabel("Read length (bp)")
     ax1.set_ylabel("UMC read count")
@@ -259,8 +260,12 @@ def plot_umc_posterior(result, *, title: str | None = None):
     ax1.spines["right"].set_visible(False)
 
     ax2.hist(bonuses, bins=40, color="#1f77b4", alpha=0.7, edgecolor="none")
-    ax2.axvline(result.posterior_bonus_mean, color="black", linestyle="--",
-                label=f"mean = {result.posterior_bonus_mean:,.0f} bp")
+    ax2.axvline(
+        result.posterior_bonus_mean,
+        color="black",
+        linestyle="--",
+        label=f"mean = {result.posterior_bonus_mean:,.0f} bp",
+    )
     ax2.set_xlabel("Bonus length per read (bp)")
     ax2.set_ylabel("UMC read count")
     ax2.set_title("Per-read posterior bonus")
@@ -290,9 +295,7 @@ def plot_signal_trace(result, *, title: str | None = None):
     ax.set_xlabel("Time (sec)")
     ax.set_ylabel("Raw current (ADC)")
     er_label = result.end_reason_short or result.end_reason
-    ax.set_title(
-        title or f"Signal trace — {result.read_id[:8]}…  end_reason={er_label}"
-    )
+    ax.set_title(title or f"Signal trace — {result.read_id[:8]}…  end_reason={er_label}")
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     fig.tight_layout()

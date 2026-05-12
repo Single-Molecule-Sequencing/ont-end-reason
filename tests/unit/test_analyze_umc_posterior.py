@@ -38,16 +38,12 @@ class TestTruncatedMoments:
         mu, sigma = 8.0, 0.6
         # obs = 0 → posterior is unconditional lognormal → mean = exp(mu + sigma^2/2)
         unconditional = np.exp(mu + sigma**2 / 2)
-        means, _, _, _ = _truncated_lognormal_moments(
-            np.array([0.0001]), mu, sigma
-        )
+        means, _, _, _ = _truncated_lognormal_moments(np.array([0.0001]), mu, sigma)
         assert abs(means[0] - unconditional) / unconditional < 0.01
 
     def test_mean_grows_with_obs(self) -> None:
         mu, sigma = 8.0, 0.6
-        means, _, _, _ = _truncated_lognormal_moments(
-            np.array([500.0, 5000.0, 50000.0]), mu, sigma
-        )
+        means, _, _, _ = _truncated_lognormal_moments(np.array([500.0, 5000.0, 50000.0]), mu, sigma)
         # The truncated mean must be >= the truncation threshold
         assert means[0] < means[1] < means[2]
         assert means[2] >= 50000.0

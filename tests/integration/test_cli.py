@@ -104,8 +104,15 @@ class TestAllAnalysesImplemented:
         assert result.exit_code == 0
         # Every analysis subcommand should appear by name
         for cmd in [
-            "distribution", "length", "quality", "temporal", "hypothesis",
-            "umc-posterior", "signal-trace", "sma-metrics", "tables",
+            "distribution",
+            "length",
+            "quality",
+            "temporal",
+            "hypothesis",
+            "umc-posterior",
+            "signal-trace",
+            "sma-metrics",
+            "tables",
         ]:
             assert cmd in result.output
 

@@ -26,8 +26,7 @@ class TestGMM:
     def test_em_two_component_recovers_bimodal(self) -> None:
         rng = np.random.default_rng(0)
         x = np.concatenate(
-            [rng.normal(loc=10.0, scale=1.0, size=300),
-             rng.normal(loc=25.0, scale=1.0, size=300)]
+            [rng.normal(loc=10.0, scale=1.0, size=300), rng.normal(loc=25.0, scale=1.0, size=300)]
         )
         components, _ = _fit_gmm_em(x, k=2)
         assert len(components) == 2
@@ -45,8 +44,7 @@ class TestGMM:
     def test_select_best_prefers_two_for_bimodal(self) -> None:
         rng = np.random.default_rng(0)
         x = np.concatenate(
-            [rng.normal(loc=8.0, scale=1.5, size=400),
-             rng.normal(loc=22.0, scale=2.5, size=400)]
+            [rng.normal(loc=8.0, scale=1.5, size=400), rng.normal(loc=22.0, scale=2.5, size=400)]
         )
         _, k, _, _ = _select_best_gmm(x, k_max=3)
         assert k == 2

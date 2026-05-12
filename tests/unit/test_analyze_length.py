@@ -93,9 +93,7 @@ class TestLengthAnalysis:
     def test_empty_source_raises(self, tmp_path: Path) -> None:
         # detect_format requires the filename start with sequencing_summary
         empty = tmp_path / "sequencing_summary_empty.txt"
-        empty.write_text(
-            "read_id\tend_reason\tsequence_length_template\tmean_qscore_template\n"
-        )
+        empty.write_text("read_id\tend_reason\tsequence_length_template\tmean_qscore_template\n")
         with pytest.raises(AnalysisError):
             length(empty)
 

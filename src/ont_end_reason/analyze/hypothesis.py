@@ -21,7 +21,8 @@ import pandas as pd
 from scipy.stats import ks_2samp, mannwhitneyu
 
 from ..codes import CODES, NAMES
-from ..errors import AnalysisError, IOError as OntIOError
+from ..errors import AnalysisError
+from ..errors import IOError as OntIOError
 
 
 @dataclass
@@ -78,18 +79,14 @@ def _normalise(end_reason_or_code: str) -> str:
     raise AnalysisError(f"Unknown end_reason: {end_reason_or_code!r}")
 
 
-def _load_two_classes(
-    path: Path, *, a: str, b: str, column: str
-) -> tuple[np.ndarray, np.ndarray]:
+def _load_two_classes(path: Path, *, a: str, b: str, column: str) -> tuple[np.ndarray, np.ndarray]:
     """Stream the column for two end_reason classes."""
     a_full = _normalise(a)
     b_full = _normalise(b)
     bins_a: list[np.ndarray] = []
     bins_b: list[np.ndarray] = []
     try:
-        for chunk in pd.read_csv(
-            path, sep="\t", usecols=["end_reason", column], chunksize=200_000
-        ):
+        for chunk in pd.read_csv(path, sep="\t", usecols=["end_reason", column], chunksize=200_000):
             chunk = chunk.dropna(subset=["end_reason", column])
             mask_a = chunk["end_reason"].astype(str).str.lower() == a_full
             mask_b = chunk["end_reason"].astype(str).str.lower() == b_full
@@ -131,9 +128,7 @@ def hypothesis(
 
     arr_a, arr_b = _load_two_classes(path, a=a, b=b, column=column)
     if len(arr_a) < 5 or len(arr_b) < 5:
-        raise AnalysisError(
-            f"Too few reads to test: n({a})={len(arr_a)}, n({b})={len(arr_b)}"
-        )
+        raise AnalysisError(f"Too few reads to test: n({a})={len(arr_a)}, n({b})={len(arr_b)}")
 
     test_norm = test.lower().replace("_", "-")
     notes: list[str] = []
@@ -162,8 +157,8 @@ def hypothesis(
         statistic=float(stat),
         p_value=float(p),
         effect_size=float(delta),
-        n_a=int(len(arr_a)),
-        n_b=int(len(arr_b)),
+        n_a=len(arr_a),
+        n_b=len(arr_b),
         comparison=(_normalise(a), _normalise(b)),
         column=column,
         median_a=float(np.median(arr_a)),

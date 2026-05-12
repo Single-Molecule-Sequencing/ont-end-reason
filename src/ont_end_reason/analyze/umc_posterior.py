@@ -37,7 +37,8 @@ import pandas as pd
 from scipy.stats import lognorm
 
 from ..codes import NAMES
-from ..errors import AnalysisError, IOError as OntIOError
+from ..errors import AnalysisError
+from ..errors import IOError as OntIOError
 
 
 @dataclass
@@ -69,9 +70,7 @@ class UMCPosteriorResult:
             "observed_mean": round(self.observed_mean, 2),
             "observed_median": round(self.observed_median, 2),
             "posterior_expected_true_mean": round(self.posterior_expected_true_mean, 2),
-            "posterior_expected_true_median": round(
-                self.posterior_expected_true_median, 2
-            ),
+            "posterior_expected_true_median": round(self.posterior_expected_true_median, 2),
             "posterior_bonus_mean": round(self.posterior_bonus_mean, 2),
             "posterior_bonus_total": round(self.posterior_bonus_total, 2),
             "credible_interval_95_per_read_mean": [
@@ -198,7 +197,7 @@ def umc_posterior(
         bonus_keep = means - obs
 
     return UMCPosteriorResult(
-        n_umc_reads=int(len(obs)),
+        n_umc_reads=len(obs),
         prior_class=prior_class,
         prior_log_mu=mu,
         prior_log_sigma=sigma,

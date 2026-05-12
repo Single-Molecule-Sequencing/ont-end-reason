@@ -84,8 +84,12 @@ class TestHtmlReport:
         result = build_html_report(FIXTURE, output_path=out)
         # All 6 sections should succeed against the fixture
         assert set(result.sections) == {
-            "distribution", "length", "quality", "temporal",
-            "umc_posterior", "hypothesis",
+            "distribution",
+            "length",
+            "quality",
+            "temporal",
+            "umc_posterior",
+            "hypothesis",
         }
         assert result.n_reads == 5000
         # File exists + non-trivial size

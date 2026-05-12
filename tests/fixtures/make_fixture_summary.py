@@ -34,11 +34,11 @@ DIST = {
 
 LENGTH_PARAMS = {
     # mean_log, sd_log (lognormal in nt)
-    "signal_positive": (8.5, 0.6),                       # ~5 kb
-    "unblock_mux_change": (6.7, 0.5),                    # ~800 bp
-    "data_service_unblock_mux_change": (6.5, 0.5),       # ~700 bp
-    "mux_change": (7.5, 0.8),                            # ~1.8 kb, wider
-    "signal_negative": (5.5, 0.4),                       # ~240 bp
+    "signal_positive": (8.5, 0.6),  # ~5 kb
+    "unblock_mux_change": (6.7, 0.5),  # ~800 bp
+    "data_service_unblock_mux_change": (6.5, 0.5),  # ~700 bp
+    "mux_change": (7.5, 0.8),  # ~1.8 kb, wider
+    "signal_negative": (5.5, 0.4),  # ~240 bp
 }
 
 QUALITY_PARAMS = {
@@ -55,7 +55,7 @@ def _gen_reads() -> list[dict[str, object]]:
     rows: list[dict[str, object]] = []
     rid_counter = 0
     for end_reason, frac in DIST.items():
-        n = int(round(frac * N_READS))
+        n = round(frac * N_READS)
         m, s = LENGTH_PARAMS[end_reason]
         lengths = np.clip(
             RNG.lognormal(mean=m, sigma=s, size=n).astype(int),

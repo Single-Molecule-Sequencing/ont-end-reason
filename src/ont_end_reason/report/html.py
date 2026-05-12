@@ -22,7 +22,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from ..analyze.distribution import DistributionResult, distribution
-from ..errors import AnalysisError, IOError as OntIOError
+from ..errors import AnalysisError
+from ..errors import IOError as OntIOError
 from ..io.manifest import Manifest
 
 
@@ -246,7 +247,11 @@ def build_html_report(
         ("length", "2. Read length distribution", _length_section),
         ("quality", "3. Q-score distribution (with GMM)", _quality_section),
         ("temporal", "4. Temporal patterns", _temporal_section),
-        ("umc_posterior", "5. UMC posterior length — adaptive-sampling truncation", _umc_posterior_section),
+        (
+            "umc_posterior",
+            "5. UMC posterior length — adaptive-sampling truncation",
+            _umc_posterior_section,
+        ),
         ("hypothesis", "6. Statistical comparisons (SP vs UMC)", _hypothesis_section),
     ]
     for key, heading, fn in section_attempts:
@@ -256,13 +261,10 @@ def build_html_report(
             sections_built.append(key)
         except (AnalysisError, OntIOError, ValueError, KeyError) as exc:
             section_html.append(
-                f"<h2>{heading}</h2><div class='section-error'>"
-                f"Section unavailable: {exc}</div>"
+                f"<h2>{heading}</h2><div class='section-error'>Section unavailable: {exc}</div>"
             )
 
-    toc_items = "\n".join(
-        f"<li>{i + 1}. {name}</li>" for i, name in enumerate(sections_built)
-    )
+    toc_items = "\n".join(f"<li>{i + 1}. {name}</li>" for i, name in enumerate(sections_built))
 
     html = f"""<!DOCTYPE html>
 <html lang="en">

@@ -20,7 +20,8 @@ import numpy as np
 import pandas as pd
 from scipy.stats import norm
 
-from ..errors import AnalysisError, IOError as OntIOError
+from ..errors import AnalysisError
+from ..errors import IOError as OntIOError
 
 
 @dataclass
@@ -232,7 +233,7 @@ def quality(
             continue
         components, k, bic, aic = _select_best_gmm(qs, k_max=gmm_components)
         per_class[er] = QualityStats(
-            n=int(len(qs)),
+            n=len(qs),
             mean=float(np.mean(qs)),
             median=float(np.median(qs)),
             std=float(np.std(qs)),

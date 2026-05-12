@@ -7,7 +7,8 @@ from pathlib import Path
 import pytest
 
 from ont_end_reason.analyze.temporal import temporal
-from ont_end_reason.errors import AnalysisError, IOError as OntIOError
+from ont_end_reason.errors import AnalysisError
+from ont_end_reason.errors import IOError as OntIOError
 
 pytestmark = pytest.mark.fast
 

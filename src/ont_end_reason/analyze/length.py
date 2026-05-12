@@ -12,14 +12,15 @@ downstream report generators.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterable
 
 import numpy as np
 import pandas as pd
 
-from ..errors import AnalysisError, IOError as OntIOError
+from ..errors import AnalysisError
+from ..errors import IOError as OntIOError
 from ..io.manifest import ReadRecord
 from ..io.readers import detect_format, extract_from_summary
 
@@ -94,7 +95,7 @@ def _summarize(lengths: np.ndarray) -> LengthStats:
         # Defensive — caller filters empty groups
         raise AnalysisError("Cannot summarize empty length array")
     return LengthStats(
-        n=int(len(lengths)),
+        n=len(lengths),
         mean=float(np.mean(lengths)),
         median=float(np.median(lengths)),
         std=float(np.std(lengths)),
@@ -174,9 +175,7 @@ def length(
         arrays_by_class, n_total = _from_summary_streaming(path)
     else:
         by_class_lists = _gather_lengths_by_class(source)
-        arrays_by_class = {
-            k: np.asarray(v, dtype=np.int64) for k, v in by_class_lists.items()
-        }
+        arrays_by_class = {k: np.asarray(v, dtype=np.int64) for k, v in by_class_lists.items()}
         n_total = sum(len(v) for v in arrays_by_class.values())
 
     if n_total == 0:

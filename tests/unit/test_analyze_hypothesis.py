@@ -51,9 +51,7 @@ class TestHypothesis:
         assert result.test == "ks"
 
     def test_full_name_resolution(self) -> None:
-        result = hypothesis(
-            FIXTURE, a="signal_positive", b="unblock_mux_change"
-        )
+        result = hypothesis(FIXTURE, a="signal_positive", b="unblock_mux_change")
         assert result.comparison == ("signal_positive", "unblock_mux_change")
 
     def test_unknown_test_raises(self) -> None:

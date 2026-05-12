@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from ont_end_reason.analyze.sma_metrics import sma_metrics
 from ont_end_reason.analyze.signal_trace import signal_trace
+from ont_end_reason.analyze.sma_metrics import sma_metrics
 from ont_end_reason.analyze.tables import generate_tables, render_all
 from ont_end_reason.errors import AnalysisError
 

@@ -253,13 +253,21 @@ def analyze_sma_metrics(source: str, json_out: str | None) -> None:
 
 @analyze.command("tables")
 @click.argument("source", type=click.Path(exists=True))
-@click.option("--name", required=True,
-              type=click.Choice(["summary", "per_class", "quality"]))
-@click.option("--format", "fmt", default="markdown",
-              type=click.Choice(["tsv", "csv", "markdown", "latex"]),
-              show_default=True)
-@click.option("--out", "out_path", type=click.Path(), default=None,
-              help="Write rendered table to this path; omit to print to stdout.")
+@click.option("--name", required=True, type=click.Choice(["summary", "per_class", "quality"]))
+@click.option(
+    "--format",
+    "fmt",
+    default="markdown",
+    type=click.Choice(["tsv", "csv", "markdown", "latex"]),
+    show_default=True,
+)
+@click.option(
+    "--out",
+    "out_path",
+    type=click.Path(),
+    default=None,
+    help="Write rendered table to this path; omit to print to stdout.",
+)
 def analyze_tables(source: str, name: str, fmt: str, out_path: str | None) -> None:
     """Generate a paper-table from an analysis result.
 
@@ -282,8 +290,12 @@ def analyze_tables(source: str, name: str, fmt: str, out_path: str | None) -> No
 
 @analyze.command("umc-posterior")
 @click.argument("source", type=click.Path(exists=True))
-@click.option("--prior-class", default="signal_positive", show_default=True,
-              help="End reason whose length distribution provides the prior.")
+@click.option(
+    "--prior-class",
+    default="signal_positive",
+    show_default=True,
+    help="End reason whose length distribution provides the prior.",
+)
 @click.option("--json", "json_out", type=click.Path(), default=None)
 @click.option("--plot", "plot_out", type=click.Path(), default=None)
 def analyze_umc_posterior(
@@ -335,16 +347,23 @@ def analyze_umc_posterior(
 
 @analyze.command("hypothesis")
 @click.argument("source", type=click.Path(exists=True))
-@click.option("-a", "class_a", default="SP", show_default=True,
-              help="First end_reason class (short code or full name).")
-@click.option("-b", "class_b", default="UMC", show_default=True,
-              help="Second end_reason class.")
-@click.option("--test", default="mann-whitney",
-              type=click.Choice(["mann-whitney", "ks"]),
-              show_default=True)
-@click.option("--column", default="sequence_length_template",
-              type=click.Choice(["sequence_length_template", "mean_qscore_template"]),
-              show_default=True)
+@click.option(
+    "-a",
+    "class_a",
+    default="SP",
+    show_default=True,
+    help="First end_reason class (short code or full name).",
+)
+@click.option("-b", "class_b", default="UMC", show_default=True, help="Second end_reason class.")
+@click.option(
+    "--test", default="mann-whitney", type=click.Choice(["mann-whitney", "ks"]), show_default=True
+)
+@click.option(
+    "--column",
+    default="sequence_length_template",
+    type=click.Choice(["sequence_length_template", "mean_qscore_template"]),
+    show_default=True,
+)
 @click.option("--json", "json_out", type=click.Path(), default=None)
 def analyze_hypothesis(
     source: str,
@@ -381,8 +400,13 @@ def analyze_hypothesis(
 
 @analyze.command("quality")
 @click.argument("source", type=click.Path(exists=True))
-@click.option("--gmm-components", default=3, type=int, show_default=True,
-              help="Max GMM components to try (BIC selects the best).")
+@click.option(
+    "--gmm-components",
+    default=3,
+    type=int,
+    show_default=True,
+    help="Max GMM components to try (BIC selects the best).",
+)
 @click.option("--json", "json_out", type=click.Path(), default=None)
 @click.option("--plot", "plot_out", type=click.Path(), default=None)
 def analyze_quality(
@@ -402,9 +426,7 @@ def analyze_quality(
     click.echo(f"Total reads: {result.total_reads:,}")
     click.echo(f"{'End reason':<35}{'n':>8}{'mean Q':>9}{'median':>9}{'k':>4}")
     for er, s in sorted(result.per_class.items(), key=lambda kv: -kv[1].n):
-        click.echo(
-            f"  {er:<33}{s.n:>8,d}{s.mean:>9.2f}{s.median:>9.2f}{s.gmm_chosen_k:>4d}"
-        )
+        click.echo(f"  {er:<33}{s.n:>8,d}{s.mean:>9.2f}{s.median:>9.2f}{s.gmm_chosen_k:>4d}")
 
     if json_out:
         Path(json_out).parent.mkdir(parents=True, exist_ok=True)

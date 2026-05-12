@@ -57,9 +57,7 @@ def generate_tables(source: str | Path, *, name: str, **kwargs: Any) -> TableRes
     """
     fmt = kwargs.pop("fmt", "tsv")
     if name not in _KNOWN_NAMES:
-        raise AnalysisError(
-            f"Unknown table name {name!r}. Choose from: {sorted(_KNOWN_NAMES)}"
-        )
+        raise AnalysisError(f"Unknown table name {name!r}. Choose from: {sorted(_KNOWN_NAMES)}")
 
     if name == "summary":
         dist = distribution(source)
@@ -77,9 +75,7 @@ def generate_tables(source: str | Path, *, name: str, **kwargs: Any) -> TableRes
         # Length only meaningful for summary/POD5; skip if missing
         try:
             len_res = length(source)
-            len_per_class = {
-                er: s for er, s in len_res.per_class.items()
-            }
+            len_per_class = dict(len_res.per_class.items())
         except AnalysisError:
             len_per_class = {}
         rows = []

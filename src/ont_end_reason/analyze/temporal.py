@@ -19,7 +19,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from ..errors import AnalysisError, IOError as OntIOError
+from ..errors import AnalysisError
+from ..errors import IOError as OntIOError
 
 
 @dataclass
@@ -43,8 +44,7 @@ class TemporalResult:
             "bin_centers_hours": [round(c, 3) for c in self.bin_centers],
             "counts_by_class": self.counts_by_class,
             "fractions_by_class": {
-                k: [round(v, 4) for v in vs]
-                for k, vs in self.fractions_by_class.items()
+                k: [round(v, 4) for v in vs] for k, vs in self.fractions_by_class.items()
             },
             "source": self.source,
         }
@@ -116,7 +116,7 @@ def temporal(source: str | Path, *, bin_seconds: float = 3600.0) -> TemporalResu
         fractions_by_class[er] = fracs
 
     return TemporalResult(
-        total_reads=int(len(times)),
+        total_reads=len(times),
         bin_seconds=float(bin_seconds),
         bin_edges=edges.tolist(),
         bin_centers=centers_hours.tolist(),

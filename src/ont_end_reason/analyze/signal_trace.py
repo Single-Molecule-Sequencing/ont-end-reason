@@ -16,7 +16,8 @@ from pathlib import Path
 import numpy as np
 
 from ..codes import CODES
-from ..errors import AnalysisError, IOError as OntIOError
+from ..errors import AnalysisError
+from ..errors import IOError as OntIOError
 from ..io.readers import _normalise_end_reason
 
 
@@ -68,9 +69,7 @@ def signal_trace(pod5_path: str | Path, *, read_id: str) -> SignalTraceResult:
     try:
         from pod5 import Reader as Pod5Reader  # type: ignore[import-not-found]
     except ImportError as exc:
-        raise OntIOError(
-            "signal_trace requires the `pod5` package: pip install pod5"
-        ) from exc
+        raise OntIOError("signal_trace requires the `pod5` package: pip install pod5") from exc
 
     p = Path(pod5_path)
     files = sorted(p.rglob("*.pod5")) if p.is_dir() else [p]
@@ -92,11 +91,11 @@ def signal_trace(pod5_path: str | Path, *, read_id: str) -> SignalTraceResult:
                         samples_per_second=sample_rate,
                         end_reason=er,
                         end_reason_short=CODES.get(er),
-                        n_samples=int(len(raw)),
+                        n_samples=len(raw),
                         duration_seconds=float(len(raw) / max(sample_rate, 1)),
                         source_file=str(f),
                     )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             raise OntIOError(f"Failed to read POD5 {f}: {exc}") from exc
 
     raise AnalysisError(f"read_id {read_id!r} not found in POD5 files under {p}")
