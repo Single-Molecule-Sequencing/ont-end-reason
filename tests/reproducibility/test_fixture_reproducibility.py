@@ -65,7 +65,9 @@ def _assert_equal(actual: dict, expected: dict, path: str = "") -> None:
     elif isinstance(expected, float):
         # Float comparison: numerical methods may drift in the last bit on
         # different platforms; use a tight relative tolerance.
-        assert isinstance(actual, (int, float)), f"{path}: expected number, got {type(actual).__name__}"
+        assert isinstance(actual, (int, float)), (
+            f"{path}: expected number, got {type(actual).__name__}"
+        )
         if expected == 0:
             assert abs(actual) < 1e-9, f"{path}: {actual} != {expected}"
         else:
@@ -105,15 +107,11 @@ class TestReproducibility:
         _assert_equal(actual, expected)
 
     def test_hypothesis_length(self) -> None:
-        actual = hypothesis(
-            FIXTURE, a="SP", b="UMC", column="sequence_length_template"
-        ).to_dict()
+        actual = hypothesis(FIXTURE, a="SP", b="UMC", column="sequence_length_template").to_dict()
         expected = _load("hypothesis")["length_test"]
         _assert_equal(actual, expected)
 
     def test_hypothesis_qscore(self) -> None:
-        actual = hypothesis(
-            FIXTURE, a="SP", b="UMC", column="mean_qscore_template"
-        ).to_dict()
+        actual = hypothesis(FIXTURE, a="SP", b="UMC", column="mean_qscore_template").to_dict()
         expected = _load("hypothesis")["qscore_test"]
         _assert_equal(actual, expected)

@@ -21,9 +21,7 @@ from typing import Any
 
 LEGACY = Path("/tmp/end_reason_legacy.py")
 NEW = Path("/home/farnum248/repos/ont-ecosystem/skills/end-reason/scripts/end_reason.py")
-SYN = Path(
-    "/home/farnum248/repos/ont-end-reason/tests/fixtures/sequencing_summary_synthetic.txt"
-)
+SYN = Path("/home/farnum248/repos/ont-end-reason/tests/fixtures/sequencing_summary_synthetic.txt")
 POD5 = Path(
     "/mnt/d/University of Michigan Dropbox/Gregory Farnum/SMS/Reference_Files/"
     "20241002_0130_MN47455_ATS581_da726245/pod5"
@@ -82,9 +80,7 @@ def numbers_equiv(a: Any, b: Any, *, rel_tol: float = 1e-3) -> bool:
         keys = set(a) | set(b)
         return all(numbers_equiv(a.get(k), b.get(k), rel_tol=rel_tol) for k in keys)
     if isinstance(a, list) and isinstance(b, list):
-        return len(a) == len(b) and all(
-            numbers_equiv(x, y, rel_tol=rel_tol) for x, y in zip(a, b)
-        )
+        return len(a) == len(b) and all(numbers_equiv(x, y, rel_tol=rel_tol) for x, y in zip(a, b))
     if isinstance(a, (int, float)) and isinstance(b, (int, float)):
         if a == b:
             return True
@@ -95,48 +91,75 @@ def numbers_equiv(a: Any, b: Any, *, rel_tol: float = 1e-3) -> bool:
 
 
 TESTS = [
-    {"name": "T1_synthetic_basic",
-     "args": [str(SYN), "--json", "{outdir}/out.json"],
-     "expect_exit": 0,
-     "compare_keys": ["total_reads", "signal_positive_pct", "unblock_mux_pct"]},
-    {"name": "T2_synthetic_quick_1k",
-     "args": [str(SYN), "--quick", "--max-reads", "1000", "--json", "{outdir}/out.json"],
-     "expect_exit": 0,
-     "compare_keys": ["total_reads", "signal_positive_pct"]},
-    {"name": "T3_synthetic_with_plot",
-     "args": [str(SYN), "--json", "{outdir}/out.json", "--plot", "{outdir}/plot.png"],
-     "expect_exit": 0,
-     "check_plot": True},
-    {"name": "T4_real_pod5_quick",
-     "args": [str(POD5), "--quick", "--json", "{outdir}/out.json"],
-     "expect_exit": 0,
-     "compare_keys": ["total_reads", "signal_positive_pct", "quality_status"]},
-    {"name": "T5_real_pod5_plot",
-     "args": [str(POD5), "--quick", "--json", "{outdir}/out.json", "--plot", "{outdir}/plot.png"],
-     "expect_exit": 0,
-     "check_plot": True},
-    {"name": "T6_missing_path",
-     "args": ["/does/not/exist", "--quick"],
-     "expect_exit_nonzero": True},
-    {"name": "T7_deprecated_format",
-     "args": [str(SYN), "--format", "summary", "--json", "{outdir}/out.json"],
-     "expect_exit": 0,
-     "compare_keys": ["total_reads"],
-     "expect_warning": True},
-    {"name": "T8_deprecated_insights",
-     "args": [str(SYN), "--insights", "--json", "{outdir}/out.json"],
-     "expect_exit": 0,
-     "compare_keys": ["total_reads"],
-     "expect_warning": True},
-    {"name": "T9_deprecated_csv",
-     "args": [str(SYN), "--csv", "{outdir}/out.csv", "--json", "{outdir}/out.json"],
-     "expect_exit": 0,
-     "compare_keys": ["total_reads"],
-     "expect_warning": True},
-    {"name": "T10_synthetic_quick_no_maxreads",
-     "args": [str(SYN), "--quick", "--json", "{outdir}/out.json"],
-     "expect_exit": 0,
-     "compare_keys": ["total_reads", "signal_positive_pct"]},
+    {
+        "name": "T1_synthetic_basic",
+        "args": [str(SYN), "--json", "{outdir}/out.json"],
+        "expect_exit": 0,
+        "compare_keys": ["total_reads", "signal_positive_pct", "unblock_mux_pct"],
+    },
+    {
+        "name": "T2_synthetic_quick_1k",
+        "args": [str(SYN), "--quick", "--max-reads", "1000", "--json", "{outdir}/out.json"],
+        "expect_exit": 0,
+        "compare_keys": ["total_reads", "signal_positive_pct"],
+    },
+    {
+        "name": "T3_synthetic_with_plot",
+        "args": [str(SYN), "--json", "{outdir}/out.json", "--plot", "{outdir}/plot.png"],
+        "expect_exit": 0,
+        "check_plot": True,
+    },
+    {
+        "name": "T4_real_pod5_quick",
+        "args": [str(POD5), "--quick", "--json", "{outdir}/out.json"],
+        "expect_exit": 0,
+        "compare_keys": ["total_reads", "signal_positive_pct", "quality_status"],
+    },
+    {
+        "name": "T5_real_pod5_plot",
+        "args": [
+            str(POD5),
+            "--quick",
+            "--json",
+            "{outdir}/out.json",
+            "--plot",
+            "{outdir}/plot.png",
+        ],
+        "expect_exit": 0,
+        "check_plot": True,
+    },
+    {
+        "name": "T6_missing_path",
+        "args": ["/does/not/exist", "--quick"],
+        "expect_exit_nonzero": True,
+    },
+    {
+        "name": "T7_deprecated_format",
+        "args": [str(SYN), "--format", "summary", "--json", "{outdir}/out.json"],
+        "expect_exit": 0,
+        "compare_keys": ["total_reads"],
+        "expect_warning": True,
+    },
+    {
+        "name": "T8_deprecated_insights",
+        "args": [str(SYN), "--insights", "--json", "{outdir}/out.json"],
+        "expect_exit": 0,
+        "compare_keys": ["total_reads"],
+        "expect_warning": True,
+    },
+    {
+        "name": "T9_deprecated_csv",
+        "args": [str(SYN), "--csv", "{outdir}/out.csv", "--json", "{outdir}/out.json"],
+        "expect_exit": 0,
+        "compare_keys": ["total_reads"],
+        "expect_warning": True,
+    },
+    {
+        "name": "T10_synthetic_quick_no_maxreads",
+        "args": [str(SYN), "--quick", "--json", "{outdir}/out.json"],
+        "expect_exit": 0,
+        "compare_keys": ["total_reads", "signal_positive_pct"],
+    },
 ]
 
 

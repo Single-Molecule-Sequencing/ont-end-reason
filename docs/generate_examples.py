@@ -123,9 +123,11 @@ def main() -> None:
         "hero",
     )
 
-    print(f"Wrote {len(list(JSON_DIR.iterdir()))} JSON, "
-          f"{len(list(CHART_DIR.iterdir()))} charts, "
-          f"{len(list(FIG_DIR.iterdir()))} PNGs.")
+    print(
+        f"Wrote {len(list(JSON_DIR.iterdir()))} JSON, "
+        f"{len(list(CHART_DIR.iterdir()))} charts, "
+        f"{len(list(FIG_DIR.iterdir()))} PNGs."
+    )
 
 
 if __name__ == "__main__":
