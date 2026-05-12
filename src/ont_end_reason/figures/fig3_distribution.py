@@ -20,9 +20,12 @@ def fig3_distribution(
     quick: bool = False,
 ) -> str:
     """Build Figure 3 from a source and save to `out`. Returns the output path."""
+    import matplotlib.pyplot as plt
+
     result = distribution(source, quick=quick)
     fig = plot_distribution(result)
     out_path = Path(out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out_path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
     return str(out_path)

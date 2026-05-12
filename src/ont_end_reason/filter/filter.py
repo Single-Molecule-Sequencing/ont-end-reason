@@ -132,7 +132,9 @@ def _filter_sequential(
     n_input = 0
     n_kept = 0
 
-    log.info("filter start", keep=sorted(keep_set), tag=tag_name, threads=threads, mode="sequential")
+    log.info(
+        "filter start", keep=sorted(keep_set), tag=tag_name, threads=threads, mode="sequential"
+    )
     try:
         with (
             pysam.AlignmentFile(str(bam_path), "rb", check_sq=False, threads=threads) as bam_in,
@@ -179,23 +181,37 @@ def _scan_shard_boundaries(
     `target_reads_per_shard` records so each shard owns a roughly equal
     record-count slice. The last shard's end_voff is `None` (read to EOF).
     """
+    boundaries, _ = _scan_shard_boundaries_with_count(bam_path, n_shards, target_reads_per_shard)
+    return boundaries
+
+
+def _scan_shard_boundaries_with_count(
+    bam_path: Path, n_shards: int, target_reads_per_shard: int
+) -> tuple[list[tuple[int, int | None]], int]:
+    """Like `_scan_shard_boundaries`, but also returns the total read count.
+
+    The count comes for free from the single sequential pass, so callers
+    that need it for downstream shard-count tuning avoid a second scan.
+    """
     import pysam  # type: ignore[import-untyped]
 
-    boundaries: list[int] = []
+    starts: list[int] = []
+    total = 0
     with pysam.AlignmentFile(str(bam_path), "rb", check_sq=False) as bam_in:
-        boundaries.append(bam_in.tell())
+        starts.append(bam_in.tell())
         count_in_shard = 0
         for _ in bam_in.fetch(until_eof=True):
+            total += 1
             count_in_shard += 1
-            if count_in_shard >= target_reads_per_shard and len(boundaries) < n_shards:
-                boundaries.append(bam_in.tell())
+            if count_in_shard >= target_reads_per_shard and len(starts) < n_shards:
+                starts.append(bam_in.tell())
                 count_in_shard = 0
-    if len(boundaries) <= 1:
-        return [(boundaries[0], None)]
-    return [
-        (start, boundaries[i + 1] if i + 1 < len(boundaries) else None)
-        for i, start in enumerate(boundaries)
+    if len(starts) <= 1:
+        return [(starts[0], None)], total
+    pairs = [
+        (start, starts[i + 1] if i + 1 < len(starts) else None) for i, start in enumerate(starts)
     ]
+    return pairs, total
 
 
 def _worker_filter_shard(
@@ -247,22 +263,26 @@ def _filter_parallel(
     except ImportError as exc:
         raise OntIOError("filter_bam requires pysam") from exc
 
-    file_bytes = bam_path.stat().st_size
-    estimated_reads = max(1, file_bytes // 200)
-    n_shards = max(2, min(threads * 2, (estimated_reads + shard_size - 1) // shard_size))
-    target_per_shard = max(1, estimated_reads // n_shards)
+    # Cap shard count generously — the scan stops once we hit the cap
+    # OR run out of reads, whichever comes first. shard_size controls
+    # the target reads-per-shard directly; no file-size estimation
+    # (which mis-predicted by 30× on highly-compressed inputs).
+    max_shards = max(2, threads * 4)
+    boundaries, total_reads = _scan_shard_boundaries_with_count(
+        bam_path, n_shards=max_shards, target_reads_per_shard=shard_size
+    )
     log.info(
         "filter start",
         keep=sorted(keep_set),
         tag=tag_name,
         threads=threads,
         mode="parallel",
-        shards=n_shards,
+        shards=len(boundaries),
         shard_size=shard_size,
+        total_reads=total_reads,
     )
 
-    boundaries = _scan_shard_boundaries(bam_path, n_shards, target_per_shard)
-    if len(boundaries) <= 1:
+    if len(boundaries) <= 1 or total_reads < MIN_READS_FOR_PARALLEL:
         return _filter_sequential(
             bam_path, output_path, keep_set, tag_name=tag_name, threads=threads
         )

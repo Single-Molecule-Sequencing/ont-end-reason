@@ -96,8 +96,24 @@ def _fetch_atoms() -> list[dict]:
     return atoms
 
 
+def _tool_block(atom: dict) -> dict | None:
+    """Return the atom's tool-reproducibility block, or None.
+
+    Canonical location: `provenance.tool` (the paper-side schema disallows
+    extra top-level keys, end-reason-paper@491e259). Top-level `tool` is
+    accepted as a legacy fallback for any atom that hasn't migrated yet.
+    """
+    data = atom.get("data") or {}
+    provenance = data.get("provenance") or {}
+    if isinstance(provenance, dict) and isinstance(provenance.get("tool"), dict):
+        return provenance["tool"]
+    if isinstance(data.get("tool"), dict):
+        return data["tool"]
+    return None
+
+
 def _has_tool_block(atom: dict) -> bool:
-    return isinstance(atom.get("data", {}).get("tool"), dict)
+    return _tool_block(atom) is not None
 
 
 def _ont_end_reason_subcommands() -> set[str]:
@@ -131,7 +147,7 @@ class TestPaperAtomsStructural:
 
     def test_every_pinned_atom_references_this_tool(self) -> None:
         for atom in self._atoms():
-            tool = atom["data"]["tool"]
+            tool = _tool_block(atom) or {}
             assert tool.get("name") == "ont-end-reason", (
                 f"{atom['name']}: tool.name = {tool.get('name')!r}, expected 'ont-end-reason'"
             )
@@ -140,7 +156,7 @@ class TestPaperAtomsStructural:
         from packaging.version import InvalidVersion, Version
 
         for atom in self._atoms():
-            v = atom["data"]["tool"].get("version")
+            v = (_tool_block(atom) or {}).get("version")
             assert v, f"{atom['name']}: tool.version missing"
             try:
                 Version(str(v))
@@ -149,10 +165,15 @@ class TestPaperAtomsStructural:
 
     def test_invocations_reference_real_subcommands(self) -> None:
         valid = _ont_end_reason_subcommands() | {
-            "tag", "filter", "export-fastq", "discover", "stats", "report",
+            "tag",
+            "filter",
+            "export-fastq",
+            "discover",
+            "stats",
+            "report",
         }
         for atom in self._atoms():
-            cmd = atom["data"]["tool"].get("invocation", "")
+            cmd = (_tool_block(atom) or {}).get("invocation", "")
             # First word after "ont-end-reason" is the subcommand. If it's
             # "analyze", the next word is the analysis subcommand.
             tokens = cmd.replace("ont-end-reason", "").strip().split()
@@ -167,10 +188,8 @@ class TestPaperAtomsStructural:
 
     def test_jq_paths_non_empty(self) -> None:
         for atom in self._atoms():
-            jq = atom["data"]["tool"].get("jq_path", "")
-            assert isinstance(jq, str) and jq, (
-                f"{atom['name']}: tool.jq_path empty or non-string"
-            )
+            jq = (_tool_block(atom) or {}).get("jq_path", "")
+            assert isinstance(jq, str) and jq, f"{atom['name']}: tool.jq_path empty or non-string"
 
 
 @pytest.mark.slow
@@ -187,17 +206,26 @@ class TestPaperAtomsNumerical:
     def test_distribution_atoms_produce_a_percentage(self) -> None:
         atoms = [a for a in _fetch_atoms() if _has_tool_block(a)]
         distribution_atoms = [
-            a for a in atoms
-            if "analyze distribution" in a["data"]["tool"].get("invocation", "")
+            a
+            for a in atoms
+            if "analyze distribution" in (_tool_block(a) or {}).get("invocation", "")
         ]
         if not distribution_atoms:
             pytest.skip("No distribution-class atoms found yet")
 
         # Run distribution once on the fixture and reuse for all atoms
         result = subprocess.run(
-            ["ont-end-reason", "analyze", "distribution", str(FIXTURE),
-             "--json", "/tmp/paper_atom_dist.json"],
-            capture_output=True, text=True, timeout=60,
+            [
+                "ont-end-reason",
+                "analyze",
+                "distribution",
+                str(FIXTURE),
+                "--json",
+                "/tmp/paper_atom_dist.json",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=60,
         )
         assert result.returncode == 0, f"CLI failed: {result.stderr}"
 
