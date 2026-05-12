@@ -57,16 +57,18 @@ def export_fastq(
     open_fn = gzip.open if compress else open  # type: ignore[assignment]
 
     try:
-        with pysam.AlignmentFile(str(bam_path), "rb", check_sq=False) as bam_in:
-            with open_fn(str(fastq_path), "wt") as fh:  # type: ignore[arg-type]
-                for read in bam_in.fetch(until_eof=True):
-                    if read.is_secondary or read.is_supplementary:
-                        continue
-                    if read.query_sequence is None:
-                        continue
-                    qual = read.qual or "!" * len(read.query_sequence)
-                    fh.write(f"@{read.query_name}\n{read.query_sequence}\n+\n{qual}\n")
-                    n_written += 1
+        with (
+            pysam.AlignmentFile(str(bam_path), "rb", check_sq=False) as bam_in,
+            open_fn(str(fastq_path), "wt") as fh,  # type: ignore[arg-type]
+        ):
+            for read in bam_in.fetch(until_eof=True):
+                if read.is_secondary or read.is_supplementary:
+                    continue
+                if read.query_sequence is None:
+                    continue
+                qual = read.qual or "!" * len(read.query_sequence)
+                fh.write(f"@{read.query_name}\n{read.query_sequence}\n+\n{qual}\n")
+                n_written += 1
     except OSError as exc:
         raise OntIOError(f"BAM/FASTQ I/O failed: {exc}") from exc
 

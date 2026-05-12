@@ -113,18 +113,20 @@ def tag_bam(
     n_missing = 0
 
     try:
-        with pysam.AlignmentFile(str(bam_path), "rb", check_sq=False) as bam_in:
-            with pysam.AlignmentFile(str(output_path), "wb", template=bam_in) as bam_out:
-                for read in bam_in.fetch(until_eof=True):
-                    n_input += 1
-                    read_id = read.query_name
-                    er_short = er_map.get(read_id)
-                    if er_short is not None:
-                        read.set_tag(tag_name, er_short, value_type="Z")
-                        n_tagged += 1
-                    else:
-                        n_missing += 1
-                    bam_out.write(read)
+        with (
+            pysam.AlignmentFile(str(bam_path), "rb", check_sq=False) as bam_in,
+            pysam.AlignmentFile(str(output_path), "wb", template=bam_in) as bam_out,
+        ):
+            for read in bam_in.fetch(until_eof=True):
+                n_input += 1
+                read_id = read.query_name
+                er_short = er_map.get(read_id)
+                if er_short is not None:
+                    read.set_tag(tag_name, er_short, value_type="Z")
+                    n_tagged += 1
+                else:
+                    n_missing += 1
+                bam_out.write(read)
     except OSError as exc:
         raise OntIOError(f"BAM I/O failed: {exc}") from exc
 
