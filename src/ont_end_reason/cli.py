@@ -234,9 +234,54 @@ def _scaffold_analyze(cli_name: str, module_name: str) -> click.Command:
     return cmd
 
 
-analyze.add_command(_scaffold_analyze("hypothesis", "hypothesis"))
 analyze.add_command(_scaffold_analyze("umc-posterior", "umc_posterior"))
 analyze.add_command(_scaffold_analyze("sma-metrics", "sma_metrics"))
+
+
+@analyze.command("hypothesis")
+@click.argument("source", type=click.Path(exists=True))
+@click.option("-a", "class_a", default="SP", show_default=True,
+              help="First end_reason class (short code or full name).")
+@click.option("-b", "class_b", default="UMC", show_default=True,
+              help="Second end_reason class.")
+@click.option("--test", default="mann-whitney",
+              type=click.Choice(["mann-whitney", "ks"]),
+              show_default=True)
+@click.option("--column", default="sequence_length_template",
+              type=click.Choice(["sequence_length_template", "mean_qscore_template"]),
+              show_default=True)
+@click.option("--json", "json_out", type=click.Path(), default=None)
+def analyze_hypothesis(
+    source: str,
+    class_a: str,
+    class_b: str,
+    test: str,
+    column: str,
+    json_out: str | None,
+) -> None:
+    """Mann-Whitney or KS test between two end_reason populations."""
+    from .analyze.hypothesis import hypothesis as do_hypothesis
+
+    try:
+        result = do_hypothesis(source, a=class_a, b=class_b, test=test, column=column)
+    except OntEndReasonError as exc:
+        _die(str(exc))
+
+    click.echo(f"Test:           {result.test}")
+    click.echo(f"Column:         {result.column}")
+    click.echo(f"Comparison:     {result.comparison[0]}  vs  {result.comparison[1]}")
+    click.echo(f"n_a / n_b:      {result.n_a:,} / {result.n_b:,}")
+    click.echo(f"Statistic:      {result.statistic:.4g}")
+    click.echo(f"p-value:        {result.p_value:.4g}")
+    click.echo(f"Cliff's Δ:      {result.effect_size:+.4f}")
+    click.echo(f"Median a / b:   {result.median_a:.3f} / {result.median_b:.3f}")
+    for note in result.notes:
+        click.echo(f"Note: {note}")
+
+    if json_out:
+        Path(json_out).parent.mkdir(parents=True, exist_ok=True)
+        Path(json_out).write_text(json.dumps(result.to_dict(), indent=2))
+        click.echo(f"JSON: {json_out}")
 
 
 @analyze.command("quality")
