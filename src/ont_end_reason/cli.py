@@ -234,12 +234,43 @@ def _scaffold_analyze(cli_name: str, module_name: str) -> click.Command:
     return cmd
 
 
-analyze.add_command(_scaffold_analyze("length", "length"))
 analyze.add_command(_scaffold_analyze("quality", "quality"))
 analyze.add_command(_scaffold_analyze("temporal", "temporal"))
 analyze.add_command(_scaffold_analyze("hypothesis", "hypothesis"))
 analyze.add_command(_scaffold_analyze("umc-posterior", "umc_posterior"))
 analyze.add_command(_scaffold_analyze("sma-metrics", "sma_metrics"))
+
+
+@analyze.command("length")
+@click.argument("source", type=click.Path(exists=True))
+@click.option("--json", "json_out", type=click.Path(), default=None)
+@click.option("--plot", "plot_out", type=click.Path(), default=None)
+def analyze_length(source: str, json_out: str | None, plot_out: str | None) -> None:
+    """Per-end_reason length distribution: n, mean, median, percentiles, N50."""
+    from .analyze.length import length as do_length
+
+    try:
+        result = do_length(source)
+    except OntEndReasonError as exc:
+        _die(str(exc))
+
+    click.echo(f"Total reads:  {result.total_reads:,}")
+    click.echo(f"{'End reason':<35}{'n':>8}{'median':>9}{'p95':>9}{'N50':>9}")
+    for er, s in sorted(result.per_class.items(), key=lambda kv: -kv[1].n):
+        click.echo(f"  {er:<33}{s.n:>8,d}{s.median:>9,.0f}{s.p95:>9,.0f}{s.n50:>9,d}")
+
+    if json_out:
+        Path(json_out).parent.mkdir(parents=True, exist_ok=True)
+        Path(json_out).write_text(json.dumps(result.to_dict(), indent=2))
+        click.echo(f"JSON: {json_out}")
+
+    if plot_out:
+        from .viz.static import plot_length_distribution
+
+        fig = plot_length_distribution(result)
+        Path(plot_out).parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(plot_out, dpi=300, bbox_inches="tight")
+        click.echo(f"Plot: {plot_out}")
 
 
 @analyze.command("signal-trace")
