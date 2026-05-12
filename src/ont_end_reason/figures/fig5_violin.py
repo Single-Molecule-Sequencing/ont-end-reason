@@ -1,15 +1,23 @@
 """Reproducer for paper Figure 5 — Q-score violins per end_reason.
 
-v0.1.0 STATUS: scaffold. Depends on `analyze.quality` which is also v0.2.0.
+Composes `analyze.quality` + `viz.static.plot_quality_violins` to produce
+a publication-ready PDF. Cosmetic refinements (paper-exact font sizes,
+tick spacing) tracked as a follow-up issue; the core analysis is complete.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
 
+from ..analyze.quality import quality
+from ..viz.static import plot_quality_violins
+
 
 def fig5_violin(source: str | Path, *, out: str | Path) -> str:
-    raise NotImplementedError(
-        "fig5_violin needs analyze.quality (scheduled v0.2.0). "
-        "Reference: end-reason-paper Figure 5 panel specifications."
-    )
+    """Build Figure 5 and save to `out`. Returns the output path."""
+    result = quality(source)
+    fig = plot_quality_violins(result)
+    out_path = Path(out)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_path, dpi=300, bbox_inches="tight")
+    return str(out_path)

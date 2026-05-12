@@ -498,15 +498,38 @@ def analyze_length(source: str, json_out: str | None, plot_out: str | None) -> N
 @analyze.command("signal-trace")
 @click.argument("pod5", type=click.Path(exists=True))
 @click.option("--read-id", required=True)
-def analyze_signal_trace(pod5: str, read_id: str) -> None:
-    """[v0.2.0] Extract and visualise the raw signal trace for a single read."""
+@click.option("--json", "json_out", type=click.Path(), default=None)
+@click.option("--plot", "plot_out", type=click.Path(), default=None)
+def analyze_signal_trace(
+    pod5: str, read_id: str, json_out: str | None, plot_out: str | None
+) -> None:
+    """Extract and (optionally) visualise the raw signal trace for one read."""
     from .analyze.signal_trace import signal_trace
 
     try:
-        signal_trace(pod5, read_id=read_id)
-    except NotImplementedError as exc:
-        click.echo(f"[v0.2.0-roadmap] {exc}", err=True)
-        sys.exit(2)
+        result = signal_trace(pod5, read_id=read_id)
+    except OntEndReasonError as exc:
+        _die(str(exc))
+
+    click.echo(f"read_id:              {result.read_id}")
+    click.echo(f"end_reason:           {result.end_reason}  ({result.end_reason_short})")
+    click.echo(f"samples:              {result.n_samples:,}")
+    click.echo(f"sample_rate:          {result.samples_per_second:,} Hz")
+    click.echo(f"duration:             {result.duration_seconds:.3f} sec")
+    click.echo(f"source:               {result.source_file}")
+
+    if json_out:
+        Path(json_out).parent.mkdir(parents=True, exist_ok=True)
+        Path(json_out).write_text(json.dumps(result.to_dict(), indent=2))
+        click.echo(f"JSON: {json_out}")
+
+    if plot_out:
+        from .viz.static import plot_signal_trace
+
+        fig = plot_signal_trace(result)
+        Path(plot_out).parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(plot_out, dpi=300, bbox_inches="tight")
+        click.echo(f"Plot: {plot_out}")
 
 
 # ───────────────────────── figure (group) ─────────────────────────
@@ -536,28 +559,28 @@ def figure_fig3(source: str, out: str, quick: bool) -> None:
 @click.argument("source", type=click.Path(exists=True))
 @click.option("--out", required=True, type=click.Path())
 def figure_fig5(source: str, out: str) -> None:
-    """[v0.2.0] Paper Figure 5 — Q-score violins per end_reason."""
+    """Paper Figure 5 — Q-score violins per end_reason."""
     from .figures.fig5_violin import fig5_violin
 
     try:
-        fig5_violin(source, out=out)
-    except NotImplementedError as exc:
-        click.echo(f"[v0.2.0-roadmap] {exc}", err=True)
-        sys.exit(2)
+        path = fig5_violin(source, out=out)
+    except OntEndReasonError as exc:
+        _die(str(exc))
+    click.echo(f"Figure 5 written: {path}")
 
 
 @figure.command("fig6")
 @click.argument("source", type=click.Path(exists=True))
 @click.option("--out", required=True, type=click.Path())
 def figure_fig6(source: str, out: str) -> None:
-    """[v0.3.0] Paper Figure 6 — conceptual diagram."""
+    """Paper Figure 6 — UMC posterior diagram (observed vs inferred true length)."""
     from .figures.fig6_conceptual import fig6_conceptual
 
     try:
-        fig6_conceptual(source, out=out)
-    except NotImplementedError as exc:
-        click.echo(f"[v0.3.0-roadmap] {exc}", err=True)
-        sys.exit(2)
+        path = fig6_conceptual(source, out=out)
+    except OntEndReasonError as exc:
+        _die(str(exc))
+    click.echo(f"Figure 6 written: {path}")
 
 
 @figure.command("supplementary")

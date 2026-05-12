@@ -1,17 +1,26 @@
-"""Reproducer for paper Figure 6 — conceptual diagram.
+"""Reproducer for paper Figure 6 — conceptual diagram of UMC truncation.
 
-v0.1.0 STATUS: scaffold. The figure is a hand-illustrated diagram in the
-paper; this reproducer would emit a matplotlib version of it for slides
-or web rendering. Low-priority in the v0.2.0 roadmap.
+Renders a schematic showing: (a) observed truncated read length,
+(b) inferred posterior over true length, (c) the lost-sequence "bonus".
+
+This is a generated companion to the paper's hand-illustrated conceptual
+figure. Uses umc_posterior output as the data source so the schematic
+reflects the actual run rather than canned numbers.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
 
+from ..analyze.umc_posterior import umc_posterior
+from ..viz.static import plot_umc_posterior
+
 
 def fig6_conceptual(source: str | Path, *, out: str | Path) -> str:
-    raise NotImplementedError(
-        "fig6_conceptual is a conceptual diagram and is deferred to v0.3.0+. "
-        "The paper figure itself is in source_artwork/ in end-reason-paper."
-    )
+    """Build Figure 6 from a sequencing_summary path. Returns the output path."""
+    result = umc_posterior(source)
+    fig = plot_umc_posterior(result)
+    out_path = Path(out)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_path, dpi=300, bbox_inches="tight")
+    return str(out_path)

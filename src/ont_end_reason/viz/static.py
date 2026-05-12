@@ -271,3 +271,29 @@ def plot_umc_posterior(result, *, title: str | None = None):
     fig.suptitle(title or "UMC posterior length — adaptive-sampling truncation correction")
     fig.tight_layout()
     return fig
+
+
+def plot_signal_trace(result, *, title: str | None = None):
+    """Line plot of raw signal current over time for a single read."""
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    from ..analyze.signal_trace import SignalTraceResult
+
+    if not isinstance(result, SignalTraceResult):  # pragma: no cover
+        raise TypeError(f"Expected SignalTraceResult, got {type(result).__name__}")
+
+    fig, ax = plt.subplots(figsize=(10, 3.5))
+    t = np.arange(result.n_samples) / max(result.samples_per_second, 1)
+    colour = _PALETTE.get(result.end_reason, "#444444")
+    ax.plot(t, result.signal, color=colour, linewidth=0.4)
+    ax.set_xlabel("Time (sec)")
+    ax.set_ylabel("Raw current (ADC)")
+    er_label = result.end_reason_short or result.end_reason
+    ax.set_title(
+        title or f"Signal trace — {result.read_id[:8]}…  end_reason={er_label}"
+    )
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    fig.tight_layout()
+    return fig
