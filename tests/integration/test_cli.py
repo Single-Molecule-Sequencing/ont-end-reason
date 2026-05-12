@@ -96,22 +96,18 @@ class TestSubcommandHelp:
         assert result.exit_code == 0, f"`ont-end-reason {' '.join(args)}` failed: {result.output}"
 
 
-class TestScaffoldedAnalyses:
-    """Scaffolded analyses should exit cleanly with the v0.2.0-roadmap message."""
+class TestAllAnalysesImplemented:
+    """Every analyze subcommand is now wired (no more v0.2.0 scaffolds)."""
 
-    @pytest.mark.parametrize(
-        "subcommand",
-        [],
-    )
-    def test_scaffold_returns_v02_message(
-        self, runner: CliRunner, tmp_path: Path, subcommand: str
-    ) -> None:
-        # Need a real input file path for click's exists=True validation
-        dummy = tmp_path / "dummy.txt"
-        dummy.write_text("placeholder")
-        result = runner.invoke(main, ["analyze", subcommand, str(dummy)])
-        assert result.exit_code == 2
-        assert "v0.2.0" in result.output
+    def test_no_scaffolds_remain(self, runner: CliRunner) -> None:
+        result = runner.invoke(main, ["analyze", "--help"])
+        assert result.exit_code == 0
+        # Every analysis subcommand should appear by name
+        for cmd in [
+            "distribution", "length", "quality", "temporal", "hypothesis",
+            "umc-posterior", "signal-trace", "sma-metrics", "tables",
+        ]:
+            assert cmd in result.output
 
 
 class TestErrorHandling:

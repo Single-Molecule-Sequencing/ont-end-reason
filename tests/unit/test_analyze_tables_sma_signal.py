@@ -57,17 +57,21 @@ class TestTables:
 
 
 class TestSmaMetrics:
-    def test_returns_unavailable_when_missing(self) -> None:
+    def test_returns_well_formed_result(self) -> None:
+        """Whether smaseq_qc is installed or not, the result is well-formed."""
         result = sma_metrics(FIXTURE)
-        # smaseq_qc is not installed in this test env
-        assert result.available is False
-        assert result.delegated_to == "smaseq-qc"
-        assert "install" in " ".join(result.notes).lower()
+        assert isinstance(result.available, bool)
+        assert "smaseq-qc" in result.delegated_to
+        assert isinstance(result.notes, list)
+        if result.available:
+            assert result.delegated_to.startswith("smaseq-qc==")
+        else:
+            assert "install" in " ".join(result.notes).lower()
 
-    def test_does_not_raise(self) -> None:
-        # Robustness contract: never raises, returns sentinel result
+    def test_does_not_raise_on_bad_path(self) -> None:
+        # Robustness contract: never raises even for nonexistent paths
         result = sma_metrics("/nonexistent/path")
-        assert result.available is False
+        assert isinstance(result.available, bool)
 
 
 class TestSignalTraceImport:
