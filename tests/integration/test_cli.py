@@ -101,7 +101,7 @@ class TestScaffoldedAnalyses:
 
     @pytest.mark.parametrize(
         "subcommand",
-        ["length", "quality", "temporal", "hypothesis", "umc-posterior", "sma-metrics"],
+        ["quality", "temporal", "hypothesis", "umc-posterior", "sma-metrics"],
     )
     def test_scaffold_returns_v02_message(
         self, runner: CliRunner, tmp_path: Path, subcommand: str
