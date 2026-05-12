@@ -234,8 +234,60 @@ def _scaffold_analyze(cli_name: str, module_name: str) -> click.Command:
     return cmd
 
 
-analyze.add_command(_scaffold_analyze("umc-posterior", "umc_posterior"))
 analyze.add_command(_scaffold_analyze("sma-metrics", "sma_metrics"))
+
+
+@analyze.command("umc-posterior")
+@click.argument("source", type=click.Path(exists=True))
+@click.option("--prior-class", default="signal_positive", show_default=True,
+              help="End reason whose length distribution provides the prior.")
+@click.option("--json", "json_out", type=click.Path(), default=None)
+@click.option("--plot", "plot_out", type=click.Path(), default=None)
+def analyze_umc_posterior(
+    source: str,
+    prior_class: str,
+    json_out: str | None,
+    plot_out: str | None,
+) -> None:
+    """Posterior over true UMC length given adaptive-sampling truncation.
+
+    The paper's central novel analysis. Returns the expected "bonus" — i.e.
+    how much sequence was actually present in the molecule beyond the
+    adaptive-sampling cutoff.
+    """
+    from .analyze.umc_posterior import umc_posterior as do_umc
+
+    try:
+        result = do_umc(source, prior_class=prior_class)
+    except OntEndReasonError as exc:
+        _die(str(exc))
+
+    click.echo(f"UMC reads:              {result.n_umc_reads:,}")
+    click.echo(
+        f"Prior class:            {result.prior_class}  "
+        f"(log μ={result.prior_log_mu:.3f}, log σ={result.prior_log_sigma:.3f})"
+    )
+    click.echo(f"Observed mean length:   {result.observed_mean:>10.1f} bp")
+    click.echo(f"Observed median:        {result.observed_median:>10.1f} bp")
+    click.echo(f"Posterior expected mean:{result.posterior_expected_true_mean:>10.1f} bp")
+    click.echo(f"Posterior expected med: {result.posterior_expected_true_median:>10.1f} bp")
+    click.echo(f"Posterior bonus mean:   {result.posterior_bonus_mean:>10.1f} bp/read")
+    click.echo(f"Posterior bonus total:  {result.posterior_bonus_total:>14,.0f} bp")
+    ci_lo, ci_hi = result.credible_interval_95_per_read_mean
+    click.echo(f"95% CI per-read (mean): [{ci_lo:.1f}, {ci_hi:.1f}]")
+
+    if json_out:
+        Path(json_out).parent.mkdir(parents=True, exist_ok=True)
+        Path(json_out).write_text(json.dumps(result.to_dict(), indent=2))
+        click.echo(f"JSON: {json_out}")
+
+    if plot_out:
+        from .viz.static import plot_umc_posterior
+
+        fig = plot_umc_posterior(result)
+        Path(plot_out).parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(plot_out, dpi=300, bbox_inches="tight")
+        click.echo(f"Plot: {plot_out}")
 
 
 @analyze.command("hypothesis")

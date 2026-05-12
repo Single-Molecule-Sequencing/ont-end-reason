@@ -224,3 +224,50 @@ def plot_quality_violins(result, *, title: str | None = None):
     ax.spines["right"].set_visible(False)
     fig.tight_layout()
     return fig
+
+
+def plot_umc_posterior(result, *, title: str | None = None):
+    """Two-panel plot of UMC posterior:
+       left  — observed length histogram vs posterior expected true length histogram
+       right — per-read "bonus" (E[true] − observed) distribution
+    """
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    from ..analyze.umc_posterior import UMCPosteriorResult
+
+    if not isinstance(result, UMCPosteriorResult):  # pragma: no cover
+        raise TypeError(f"Expected UMCPosteriorResult, got {type(result).__name__}")
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11, 4.5))
+
+    means = np.asarray(result.posterior_means_per_read)
+    bonuses = np.asarray(result.bonus_per_read)
+    obs_implied = means - bonuses  # reconstruct observed from per-read means
+
+    bins = np.logspace(np.log10(100), np.log10(50_000), 50)
+    ax1.hist(obs_implied, bins=bins, alpha=0.65, color="#ff7f0e",
+             label=f"Observed (n={result.n_umc_reads:,})", edgecolor="none")
+    ax1.hist(means, bins=bins, alpha=0.65, color="#2ca02c",
+             label="Posterior E[true]", edgecolor="none")
+    ax1.set_xscale("log")
+    ax1.set_xlabel("Read length (bp)")
+    ax1.set_ylabel("UMC read count")
+    ax1.set_title("Observed vs posterior")
+    ax1.legend(frameon=False, fontsize=9)
+    ax1.spines["top"].set_visible(False)
+    ax1.spines["right"].set_visible(False)
+
+    ax2.hist(bonuses, bins=40, color="#1f77b4", alpha=0.7, edgecolor="none")
+    ax2.axvline(result.posterior_bonus_mean, color="black", linestyle="--",
+                label=f"mean = {result.posterior_bonus_mean:,.0f} bp")
+    ax2.set_xlabel("Bonus length per read (bp)")
+    ax2.set_ylabel("UMC read count")
+    ax2.set_title("Per-read posterior bonus")
+    ax2.legend(frameon=False, fontsize=9)
+    ax2.spines["top"].set_visible(False)
+    ax2.spines["right"].set_visible(False)
+
+    fig.suptitle(title or "UMC posterior length — adaptive-sampling truncation correction")
+    fig.tight_layout()
+    return fig
