@@ -13,7 +13,7 @@ Discover, tag, filter, analyse, and visualise read-termination patterns.
 [![Coverage](https://img.shields.io/badge/coverage-63%25-brightgreen.svg)](#testing)
 [![Version](https://img.shields.io/badge/version-0.2.0a1-blue.svg)](CHANGELOG.md)
 
-### 🚀 [**→ Interactive dashboard & tutorials**](https://single-molecule-sequencing.github.io/ont-end-reason/)
+### 🚀 [**→ Interactive dashboard & tutorials**](https://silver-adventure-o322543.pages.github.io/)
 
 Companion to the [end-reason paper](https://github.com/Single-Molecule-Sequencing/end-reason-paper).
 
@@ -99,7 +99,7 @@ ont-end-reason analyze umc-posterior sequencing_summary.txt --plot umc.pdf
 ont-end-reason report interactive sequencing_summary.txt --out report.html
 ```
 
-→ Full walkthrough with live charts on the [**dashboard**](https://single-molecule-sequencing.github.io/ont-end-reason/).
+→ Full walkthrough with live charts on the [**dashboard**](https://silver-adventure-o322543.pages.github.io/).
 
 ---
 
@@ -159,7 +159,7 @@ Posterior bonus total:       2,965,111 bp     ← ~3 Mb of unobserved sequence
 | `ont-end-reason report interactive` | 6-section self-contained HTML report with embedded Plotly |
 | `ont-end-reason report static` | Paginated PDF report (v0.3.0 roadmap) |
 
-Run `ont-end-reason <cmd> --help` for full flag documentation. Examples and screenshots: [dashboard](https://single-molecule-sequencing.github.io/ont-end-reason/).
+Run `ont-end-reason <cmd> --help` for full flag documentation. Examples and screenshots: [dashboard](https://silver-adventure-o322543.pages.github.io/).
 
 ---
 
@@ -269,7 +269,7 @@ Tests run against:
 - ✅ Bayesian posterior model for UMC truncation (paper's central novel analysis)
 - ✅ Interactive HTML reports with embedded Plotly
 - ✅ 143 tests, CI matrix on Python 3.10–3.13 × Ubuntu/macOS
-- ✅ [Interactive dashboard](https://single-molecule-sequencing.github.io/ont-end-reason/) with live examples
+- ✅ [Interactive dashboard](https://silver-adventure-o322543.pages.github.io/) with live examples
 - 🚧 Reproducibility CI against end-reason-paper claim atoms ([#4](https://github.com/Single-Molecule-Sequencing/ont-end-reason/issues/4))
 - 🚧 Parallel sharded BAM filtering ([#5](https://github.com/Single-Molecule-Sequencing/ont-end-reason/issues/5))
 - 🚧 Lab-skill thin-wrap migration after PyPI release ([#6](https://github.com/Single-Molecule-Sequencing/ont-end-reason/issues/6))
@@ -304,7 +304,7 @@ MIT — see [`LICENSE`](LICENSE).
 
 Built by the [Athey Lab](https://github.com/Single-Molecule-Sequencing) at the University of Michigan.
 
-[Dashboard](https://single-molecule-sequencing.github.io/ont-end-reason/) ·
+[Dashboard](https://silver-adventure-o322543.pages.github.io/) ·
 [Issues](https://github.com/Single-Molecule-Sequencing/ont-end-reason/issues) ·
 [CHANGELOG](CHANGELOG.md) ·
 [Design spec](docs/superpowers/specs/2026-05-12-ont-end-reason-design.md)
