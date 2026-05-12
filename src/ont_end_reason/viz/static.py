@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 
 from ..analyze.distribution import DistributionResult
 from ..analyze.length import LengthResult
+from ..analyze.temporal import TemporalResult
 from ..codes import CODES
 
 if TYPE_CHECKING:
@@ -140,5 +141,49 @@ def plot_length_distribution(
     ax.legend(frameon=False, fontsize=8)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
+    fig.tight_layout()
+    return fig
+
+
+def plot_temporal(
+    result: TemporalResult,
+    *,
+    title: str | None = None,
+    show_fractions: bool = True,
+) -> Figure:
+    """Stacked-area plot of end_reason fractions over time.
+
+    If `show_fractions=True` (default), the y-axis is per-bin fraction
+    summing to 1.0. If False, raw counts are plotted (useful for spotting
+    throughput drops).
+    """
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    fig, ax = plt.subplots(figsize=(9, 4.5))
+    centers = np.asarray(result.bin_centers, dtype=float)
+    ordered = [k for k in _CATEGORY_ORDER if k in result.fractions_by_class]
+    for k in result.fractions_by_class:
+        if k not in ordered:
+            ordered.append(k)
+
+    data_dict = (
+        result.fractions_by_class if show_fractions else result.counts_by_class
+    )
+    stack = np.array([data_dict[k] for k in ordered], dtype=float)
+    colours = [_PALETTE.get(k, "#cccccc") for k in ordered]
+    labels = [CODES.get(k, k) for k in ordered]
+    ax.stackplot(centers, stack, labels=labels, colors=colours, alpha=0.85)
+
+    ax.set_xlabel("Time since run start (hours)")
+    ax.set_ylabel("Fraction of reads" if show_fractions else "Read count")
+    ax.set_title(
+        title or f"End reason rates over time  (n = {result.total_reads:,})"
+    )
+    ax.legend(loc="upper right", frameon=False, fontsize=8)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    if show_fractions:
+        ax.set_ylim(0, 1.0)
     fig.tight_layout()
     return fig

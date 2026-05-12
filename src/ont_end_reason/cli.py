@@ -235,10 +235,52 @@ def _scaffold_analyze(cli_name: str, module_name: str) -> click.Command:
 
 
 analyze.add_command(_scaffold_analyze("quality", "quality"))
-analyze.add_command(_scaffold_analyze("temporal", "temporal"))
 analyze.add_command(_scaffold_analyze("hypothesis", "hypothesis"))
 analyze.add_command(_scaffold_analyze("umc-posterior", "umc_posterior"))
 analyze.add_command(_scaffold_analyze("sma-metrics", "sma_metrics"))
+
+
+@analyze.command("temporal")
+@click.argument("source", type=click.Path(exists=True))
+@click.option("--bin-seconds", default=3600.0, type=float, show_default=True)
+@click.option("--json", "json_out", type=click.Path(), default=None)
+@click.option("--plot", "plot_out", type=click.Path(), default=None)
+def analyze_temporal(
+    source: str,
+    bin_seconds: float,
+    json_out: str | None,
+    plot_out: str | None,
+) -> None:
+    """End-reason rates over time. Useful for flowcell-degradation diagnostics."""
+    from .analyze.temporal import temporal as do_temporal
+
+    try:
+        result = do_temporal(source, bin_seconds=bin_seconds)
+    except OntEndReasonError as exc:
+        _die(str(exc))
+
+    click.echo(f"Total reads: {result.total_reads:,}  bins: {len(result.bin_centers)}")
+    click.echo(f"Bin width:   {result.bin_seconds / 3600:.1f}h")
+    # Print SP and UMC fraction time series
+    for er in ("signal_positive", "unblock_mux_change"):
+        fracs = result.fractions_by_class.get(er, [])
+        if not fracs:
+            continue
+        first, last = fracs[0] * 100, fracs[-1] * 100
+        click.echo(f"  {er}: start={first:.1f}% end={last:.1f}% Δ={last - first:+.1f}pp")
+
+    if json_out:
+        Path(json_out).parent.mkdir(parents=True, exist_ok=True)
+        Path(json_out).write_text(json.dumps(result.to_dict(), indent=2))
+        click.echo(f"JSON: {json_out}")
+
+    if plot_out:
+        from .viz.static import plot_temporal
+
+        fig = plot_temporal(result)
+        Path(plot_out).parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(plot_out, dpi=300, bbox_inches="tight")
+        click.echo(f"Plot: {plot_out}")
 
 
 @analyze.command("length")
