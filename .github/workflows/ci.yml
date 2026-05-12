@@ -42,11 +42,11 @@ jobs:
         continue-on-error: true
 
       - name: Run tests
-        # Coverage gate is 40% for v0.1.0-alpha: the package ships with 7
-        # deliberately-scaffolded v0.2.0 analyses + filter/ functions that
-        # need real BAM fixtures to exercise. As v0.2.0 fills these in,
-        # the gate ratchets up toward 70% (target). See issue tracker.
-        run: pytest --cov=ont_end_reason --cov-report=term-missing --cov-fail-under=40
+        # Coverage gate ratchets up as analyses fill in:
+        #   v0.1.0-alpha: 40% (scaffolds dominant)
+        #   v0.2.0-alpha: 60% (8/8 analyses implemented + viz + report tested)
+        #   v0.3.0:       70% (target — filter/ exercised with real BAM fixtures)
+        run: pytest --cov=ont_end_reason --cov-report=term-missing --cov-fail-under=60
 
       - name: Verify CLI entry point
         run: |
