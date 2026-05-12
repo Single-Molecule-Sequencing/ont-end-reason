@@ -1,0 +1,56 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtualenvs
+.venv/
+venv/
+env/
+
+# Tests / coverage / type-check caches
+.pytest_cache/
+.cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.mypy_cache/
+.ruff_cache/
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Build artifacts
+*.bam
+*.bai
+*.csi
+*.pod5
+*.fast5
+*.fastq
+*.fastq.gz
+sequencing_summary*.txt
+!tests/fixtures/*.pod5
+!tests/fixtures/*.bam
+!tests/fixtures/sequencing_summary*.txt
+!tests/fixtures/*.fastq
+
+# Generated docs / site
+site/
+docs/_build/
+
+# Version file (auto-generated if using setuptools_scm; not used now)
+src/ont_end_reason/_version.py

@@ -1,0 +1,133 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ont-end-reason"
+dynamic = ["version"]
+description = "Comprehensive CLI for Oxford Nanopore end_reason analysis: discover, tag, filter, analyze, visualize."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {file = "LICENSE"}
+authors = [
+    {name = "Athey Lab", email = "gregfar@umich.edu"},
+]
+keywords = ["nanopore", "ONT", "sequencing", "end_reason", "quality-control", "bioinformatics"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+dependencies = [
+    "click>=8.1",
+    "pysam>=0.22",
+    "pod5>=0.3",
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "matplotlib>=3.7",
+    "scipy>=1.10",
+    "structlog>=24.1",
+    "pyyaml>=6.0",
+    "jinja2>=3.1",
+]
+
+[project.optional-dependencies]
+interactive = [
+    "plotly>=5.18",
+    "kaleido>=0.2",
+]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=4.1",
+    "hypothesis>=6.100",
+    "ruff>=0.5",
+    "mypy>=1.10",
+    "bump-my-version>=0.20",
+]
+docs = [
+    "mkdocs>=1.5",
+    "mkdocs-material>=9.5",
+    "mkdocs-click>=0.8",
+    "mkdocstrings[python]>=0.24",
+]
+
+[project.scripts]
+ont-end-reason = "ont_end_reason.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/Single-Molecule-Sequencing/ont-end-reason"
+Documentation = "https://single-molecule-sequencing.github.io/ont-end-reason/"
+Repository = "https://github.com/Single-Molecule-Sequencing/ont-end-reason"
+Issues = "https://github.com/Single-Molecule-Sequencing/ont-end-reason/issues"
+Paper = "https://github.com/Single-Molecule-Sequencing/end-reason-paper"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.dynamic]
+version = {attr = "ont_end_reason.__version__"}
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+markers = [
+    "fast: Unit tests, <0.1s, no I/O",
+    "slow: Tests >0.5s or heavy I/O",
+    "integration: End-to-end CLI tests with fixtures",
+    "reproducibility: Re-runs end-reason-paper claim atoms",
+]
+addopts = [
+    "--strict-markers",
+    "-ra",
+]
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning:pysam.*",
+    "ignore::DeprecationWarning:pod5.*",
+]
+
+[tool.coverage.run]
+source = ["src/ont_end_reason"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "C4", "RUF"]
+ignore = [
+    "E501",  # line length handled by formatter
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["B", "N"]  # tests can have looser naming/style
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+disallow_untyped_defs = false

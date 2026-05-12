@@ -1,0 +1,35 @@
+cff-version: 1.2.0
+title: "ont-end-reason"
+message: "If you use this software, please cite the companion paper."
+type: software
+authors:
+  - family-names: "Farnum"
+    given-names: "Greg"
+    affiliation: "Department of Computational Medicine and Bioinformatics, University of Michigan"
+    email: "gregfar@umich.edu"
+  - name: "Single-Molecule-Sequencing / Athey Lab"
+    affiliation: "University of Michigan"
+license: MIT
+repository-code: "https://github.com/Single-Molecule-Sequencing/ont-end-reason"
+url: "https://github.com/Single-Molecule-Sequencing/ont-end-reason"
+abstract: >
+  Comprehensive CLI for Oxford Nanopore end_reason analysis. Discover data
+  files (POD5, Fast5, sequencing_summary.txt), tag BAMs with end_reason
+  metadata, filter by end_reason category, perform 15 paper-grade analyses
+  including GMM Q-score fitting and posterior length modelling, and produce
+  static + interactive HTML visualisations. Companion to the end-reason paper.
+keywords:
+  - nanopore
+  - oxford-nanopore-technologies
+  - end-reason
+  - quality-control
+  - adaptive-sampling
+  - bioinformatics
+preferred-citation:
+  type: article
+  title: "<paper-title-when-known>"
+  authors:
+    - family-names: "Athey"
+      given-names: "Brian D."
+  year: 2026
+  status: in-preparation
