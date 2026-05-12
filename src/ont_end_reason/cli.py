@@ -234,10 +234,50 @@ def _scaffold_analyze(cli_name: str, module_name: str) -> click.Command:
     return cmd
 
 
-analyze.add_command(_scaffold_analyze("quality", "quality"))
 analyze.add_command(_scaffold_analyze("hypothesis", "hypothesis"))
 analyze.add_command(_scaffold_analyze("umc-posterior", "umc_posterior"))
 analyze.add_command(_scaffold_analyze("sma-metrics", "sma_metrics"))
+
+
+@analyze.command("quality")
+@click.argument("source", type=click.Path(exists=True))
+@click.option("--gmm-components", default=3, type=int, show_default=True,
+              help="Max GMM components to try (BIC selects the best).")
+@click.option("--json", "json_out", type=click.Path(), default=None)
+@click.option("--plot", "plot_out", type=click.Path(), default=None)
+def analyze_quality(
+    source: str,
+    gmm_components: int,
+    json_out: str | None,
+    plot_out: str | None,
+) -> None:
+    """Per-end_reason Q-score distribution + GMM fit (BIC-selected components)."""
+    from .analyze.quality import quality as do_quality
+
+    try:
+        result = do_quality(source, gmm_components=gmm_components)
+    except OntEndReasonError as exc:
+        _die(str(exc))
+
+    click.echo(f"Total reads: {result.total_reads:,}")
+    click.echo(f"{'End reason':<35}{'n':>8}{'mean Q':>9}{'median':>9}{'k':>4}")
+    for er, s in sorted(result.per_class.items(), key=lambda kv: -kv[1].n):
+        click.echo(
+            f"  {er:<33}{s.n:>8,d}{s.mean:>9.2f}{s.median:>9.2f}{s.gmm_chosen_k:>4d}"
+        )
+
+    if json_out:
+        Path(json_out).parent.mkdir(parents=True, exist_ok=True)
+        Path(json_out).write_text(json.dumps(result.to_dict(), indent=2))
+        click.echo(f"JSON: {json_out}")
+
+    if plot_out:
+        from .viz.static import plot_quality_violins
+
+        fig = plot_quality_violins(result)
+        Path(plot_out).parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(plot_out, dpi=300, bbox_inches="tight")
+        click.echo(f"Plot: {plot_out}")
 
 
 @analyze.command("temporal")

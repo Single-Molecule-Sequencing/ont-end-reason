@@ -187,3 +187,40 @@ def plot_temporal(
         ax.set_ylim(0, 1.0)
     fig.tight_layout()
     return fig
+
+
+def plot_quality_violins(result, *, title: str | None = None):
+    """Violin plot of Q-score distribution per end_reason category.
+
+    Imports QualityResult lazily to avoid pulling scipy at top-level when
+    only distribution/length are used.
+    """
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    from ..analyze.quality import QualityResult
+
+    if not isinstance(result, QualityResult):  # pragma: no cover — type guard
+        raise TypeError(f"Expected QualityResult, got {type(result).__name__}")
+
+    fig, ax = plt.subplots(figsize=(8, 4.5))
+    ordered = [k for k in _CATEGORY_ORDER if k in result.raw_qscores_by_class]
+    for k in result.raw_qscores_by_class:
+        if k not in ordered:
+            ordered.append(k)
+
+    data = [result.raw_qscores_by_class[k] for k in ordered]
+    labels = [CODES.get(k, k.upper()[:4]) for k in ordered]
+    parts = ax.violinplot(data, showmeans=True, showmedians=False, showextrema=False)
+    for body, key in zip(parts["bodies"], ordered, strict=True):
+        body.set_facecolor(_PALETTE.get(key, "#cccccc"))
+        body.set_alpha(0.7)
+    ax.set_xticks(np.arange(1, len(labels) + 1))
+    ax.set_xticklabels(labels)
+    ax.set_ylabel("Mean Q-score")
+    ax.set_xlabel("End reason")
+    ax.set_title(title or f"Q-score distribution by end_reason  (n = {result.total_reads:,})")
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    fig.tight_layout()
+    return fig
