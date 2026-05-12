@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 """Migration test: legacy /end-reason → new thin-wrapper equivalence.
 
 10 test cases covering synthetic + real-world POD5 + error paths + every
