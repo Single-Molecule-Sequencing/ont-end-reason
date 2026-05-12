@@ -118,7 +118,7 @@ ignore = [
     # Scientific notation in docstrings is intentional. Mathematical symbols
     # (−, ×, ·, ≥, ∝, Δ, σ, μ) read more naturally to scientific audiences than
     # ASCII equivalents would. Code itself stays ASCII; this is docstrings only.
-    "RUF002",
+    "RUF001", "RUF002", "RUF003",
     # Variable naming: `F` for CDF, `one_minus_F` for survival function — these
     # are mathematical conventions in statistical code and clearer than the
     # snake_case alternatives would be.
