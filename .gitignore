@@ -34,7 +34,7 @@ htmlcov/
 *.swo
 .DS_Store
 
-# Build artifacts
+# Build artifacts (but DO keep fixtures)
 *.bam
 *.bai
 *.csi
