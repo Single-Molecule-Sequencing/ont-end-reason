@@ -10,6 +10,11 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Run Node-based actions on Node 24 ahead of the 2026-06-02 forced
+  # migration (clears the Node 20 deprecation warning on every CI run).
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   test:
     runs-on: ${{ matrix.os }}
