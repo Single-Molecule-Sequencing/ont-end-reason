@@ -6,7 +6,7 @@ on:
     paths:
       - "docs/**"
       - "src/ont_end_reason/**"
-      - "mkdocs.yml"
+      - "tests/fixtures/**"
       - ".github/workflows/docs.yml"
   workflow_dispatch:
 
@@ -24,22 +24,35 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
-      - name: Install docs deps
+
+      - name: Install package (interactive extras for chart generation)
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[docs]"
-      - name: Build site
-        run: mkdocs build --strict
-        continue-on-error: true     # mkdocs.yml not yet wired in v0.1.0
+          pip install -e ".[interactive]"
+
+      - name: Regenerate dashboard example outputs
+        run: python docs/generate_examples.py
+
+      - name: Stage Pages site
+        # docs/ is the GitHub Pages root. Everything under it is served as-is.
+        run: |
+          mkdir -p _site
+          cp -r docs/* _site/
+          # Drop the generator script from the published site (it's a build tool, not content)
+          rm -f _site/generate_examples.py
+          # Add a small no-jekyll marker so files starting with _ are served
+          touch _site/.nojekyll
+          ls _site
+
       - name: Upload Pages artifact
-        if: success() && hashFiles('site/**') != ''
         uses: actions/upload-pages-artifact@v3
         with:
-          path: site
+          path: _site
 
   deploy:
     needs: build
@@ -49,7 +62,5 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
+      - id: deployment
         uses: actions/deploy-pages@v4
-        continue-on-error: true

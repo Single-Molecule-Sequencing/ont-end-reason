@@ -1,144 +1,312 @@
-# ont-end-reason
+<div align="center">
+
+# 🧬 ont-end-reason
+
+**Comprehensive CLI for Oxford Nanopore `end_reason` analysis.**
+Discover, tag, filter, analyse, and visualise read-termination patterns.
 
 [![CI](https://github.com/Single-Molecule-Sequencing/ont-end-reason/actions/workflows/ci.yml/badge.svg)](https://github.com/Single-Molecule-Sequencing/ont-end-reason/actions/workflows/ci.yml)
-[![PyPI](https://img.shields.io/pypi/v/ont-end-reason.svg)](https://pypi.org/project/ont-end-reason/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Docs](https://github.com/Single-Molecule-Sequencing/ont-end-reason/actions/workflows/docs.yml/badge.svg)](https://github.com/Single-Molecule-Sequencing/ont-end-reason/actions/workflows/docs.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Tests](https://img.shields.io/badge/tests-143%20passing-brightgreen.svg)](#testing)
+[![Coverage](https://img.shields.io/badge/coverage-63%25-brightgreen.svg)](#testing)
+[![Version](https://img.shields.io/badge/version-0.2.0a1-blue.svg)](CHANGELOG.md)
 
-> **Comprehensive CLI for Oxford Nanopore `end_reason` analysis.**
-> Discover data files (POD5, Fast5, sequencing_summary.txt), tag BAMs with
-> end_reason metadata, filter by end_reason category, analyse, and produce
-> publication-quality static figures + interactive HTML reports.
+### 🚀 [**→ Interactive dashboard & tutorials**](https://single-molecule-sequencing.github.io/ont-end-reason/)
 
-Companion to the [end-reason paper](https://github.com/Single-Molecule-Sequencing/end-reason-paper)
-from the [Athey Lab](https://github.com/Single-Molecule-Sequencing) at the
-University of Michigan.
+Companion to the [end-reason paper](https://github.com/Single-Molecule-Sequencing/end-reason-paper).
 
-## Why end_reason matters
+</div>
 
-Oxford Nanopore sequencers tag every read with an `end_reason` explaining why
-sequencing stopped. **A read can have high base quality (Q>20) and still be
-truncated or rejected by adaptive sampling** — filtering by Q-score alone is
-not enough for accurate downstream analysis.
+---
 
-This tool unifies discovery, tagging, filtering, analysis, and visualisation
-of `end_reason` metadata into a single CLI.
+## Table of contents
+
+- [Why this tool](#why-this-tool)
+- [Install](#install)
+- [Quickstart](#quickstart)
+- [The headline result](#the-headline-result)
+- [CLI surface](#cli-surface)
+- [Python API](#python-api)
+- [End_reason taxonomy](#end_reason-taxonomy)
+- [How the UMC posterior works](#how-the-umc-posterior-works)
+- [Testing](#testing)
+- [Lab infrastructure integration](#lab-infrastructure-integration)
+- [Status / roadmap](#status--roadmap)
+- [Citing](#citing)
+- [License](#license)
+
+---
+
+## Why this tool
+
+Oxford Nanopore sequencers tag every read with an `end_reason` explaining
+why sequencing stopped. **A read can have high base quality (Q>20) and
+still be truncated or rejected by adaptive sampling** — filtering by
+Q-score alone is not enough for accurate downstream analysis.
+
+`ont-end-reason` unifies the eight published analyses from the end-reason
+paper into a single PyPI-installable CLI, including the paper's novel
+*posterior length model* for adaptive-sampling-truncated reads.
+
+Before this tool, the analyses lived in scattered scripts inside
+[End_Reason_Manuscript/pipeline/bin/](https://github.com/Single-Molecule-Sequencing/End_Reason_Manuscript)
+(now archived). Every script was promoted to this repo with provenance
+headers crediting commit `b47166a` of the source. The package is the
+canonical implementation going forward.
+
+---
 
 ## Install
 
 ```bash
-pip install ont-end-reason                      # static figures only
-pip install "ont-end-reason[interactive]"       # + Plotly for interactive HTML
-```
+# Static figures only (matplotlib)
+pip install ont-end-reason
 
-From source (development):
+# + Plotly for interactive HTML reports
+pip install "ont-end-reason[interactive]"
 
-```bash
+# Development (from source)
 git clone https://github.com/Single-Molecule-Sequencing/ont-end-reason.git
 cd ont-end-reason
 pip install -e ".[dev,interactive]"
 ```
 
+Python 3.10+ required. Tested on Linux + macOS, Python 3.10 through 3.13.
+
+---
+
 ## Quickstart
 
+Five commands cover the canonical pipeline:
+
 ```bash
-# 1. Discover what's in a sequencing-run directory
+# 1. Inventory what's in a sequencing-run directory
 ont-end-reason discover /path/to/run --manifest run.json
 
 # 2. Tag a BAM with end_reason from sequencing_summary.txt
-ont-end-reason tag --summary sequencing_summary.txt --bam aligned.bam --out tagged.bam
+ont-end-reason tag --summary sequencing_summary.txt \
+                   --bam aligned.bam --out tagged.bam
 
 # 3. Filter to complete reads only (signal_positive)
 ont-end-reason filter --bam tagged.bam --keep SP --out complete.bam
 
-# 4. Analyse end_reason distribution
-ont-end-reason analyze distribution complete.bam --json results.json
+# 4. Run the paper's central novel analysis
+ont-end-reason analyze umc-posterior sequencing_summary.txt --plot umc.pdf
 
-# 5. Generate the canonical paper figures
-ont-end-reason figure fig3 sequencing_summary.txt --out fig3.pdf
-
-# 6. Build an interactive HTML report combining everything
-ont-end-reason report interactive run.json --out report.html
+# 5. Build a self-contained 6-section HTML report
+ont-end-reason report interactive sequencing_summary.txt --out report.html
 ```
 
+→ Full walkthrough with live charts on the [**dashboard**](https://single-molecule-sequencing.github.io/ont-end-reason/).
+
+---
+
+## The headline result
+
+On the [synthetic 5000-read test fixture](tests/fixtures/sequencing_summary_synthetic.txt):
+
+```
+$ ont-end-reason analyze umc-posterior tests/fixtures/sequencing_summary_synthetic.txt
+UMC reads:              600
+Prior class:            signal_positive  (log μ=8.488, log σ=0.600)
+Observed mean length:        926.2 bp
+Posterior expected mean:    5868.1 bp
+Posterior bonus mean:       4941.9 bp/read
+Posterior bonus total:       2,965,111 bp     ← ~3 Mb of unobserved sequence
+```
+
+**Adaptive-sampling truncation hides ~5× more sequence than the observed read length suggests.** Scaled to a real PromethION run with millions of UMC reads, the recovered-sequence estimate grows linearly. This is exactly what the paper's central analysis is for — and the tool surfaces it as one command on any `sequencing_summary.txt`.
+
+![UMC posterior](docs/figures/umc_posterior.png)
+
+---
+
+## CLI surface
+
+### Discovery + filter operations
+
+| Command | Purpose |
+|---|---|
+| `ont-end-reason discover <path>` | Walk a directory, inventory POD5 / Fast5 / summary / BAM / FASTQ files |
+| `ont-end-reason tag` | Add end_reason tag to BAM reads from sequencing_summary.txt |
+| `ont-end-reason filter` | Keep / drop BAM reads by end_reason short code |
+| `ont-end-reason export-fastq` | Convert filtered BAM → FASTQ for NanoPack tools |
+| `ont-end-reason stats` | Streaming QC summary from sequencing_summary.txt |
+
+### Analysis (9 subcommands)
+
+| Command | What it does |
+|---|---|
+| `ont-end-reason analyze distribution` | Per-end_reason counts + OK/CHECK/FAIL quality gate |
+| `ont-end-reason analyze length` | Length distributions per end_reason (N50, percentiles) |
+| `ont-end-reason analyze quality` | Q-score distributions with Gaussian Mixture Model fit |
+| `ont-end-reason analyze temporal` | End_reason rates over sequencing-run time |
+| `ont-end-reason analyze hypothesis` | Mann-Whitney U / KS tests with Cliff's Δ effect size |
+| **`ont-end-reason analyze umc-posterior`** ⭐ | Bayesian posterior on truncated UMC length (paper's central analysis) |
+| `ont-end-reason analyze signal-trace` | Raw POD5 current trace extraction for a single read |
+| `ont-end-reason analyze sma-metrics` | Optional bridge to the `smaseq-qc` package |
+| `ont-end-reason analyze tables` | Generate summary/per-class/quality tables (TSV/CSV/md/LaTeX) |
+
+### Paper-figure reproducers + reports
+
+| Command | Output |
+|---|---|
+| `ont-end-reason figure fig3 <source>` | Paper Figure 3 — distribution bar chart |
+| `ont-end-reason figure fig5 <source>` | Paper Figure 5 — Q-score violins |
+| `ont-end-reason figure fig6 <source>` | Paper Figure 6 — UMC posterior diagram |
+| `ont-end-reason report interactive` | 6-section self-contained HTML report with embedded Plotly |
+| `ont-end-reason report static` | Paginated PDF report (v0.3.0 roadmap) |
+
+Run `ont-end-reason <cmd> --help` for full flag documentation. Examples and screenshots: [dashboard](https://single-molecule-sequencing.github.io/ont-end-reason/).
+
+---
+
+## Python API
+
+Every CLI subcommand has a public Python API equivalent. Functions return typed `dataclass`es so callers can compose, persist, or pipe results without re-parsing CLI output:
+
+```python
+from ont_end_reason import discover, classify
+from ont_end_reason.analyze.distribution import distribution
+from ont_end_reason.analyze.umc_posterior import umc_posterior
+from ont_end_reason.viz.static import plot_umc_posterior
+
+# Discovery → Manifest
+manifest = discover("/path/to/sequencing_run")
+print(f"Found {manifest.total_files()} files")
+
+# Analysis → typed result
+result = umc_posterior("sequencing_summary.txt")
+print(f"Posterior bonus total: {result.posterior_bonus_total:,.0f} bp")
+
+# Visualisation → matplotlib Figure
+fig = plot_umc_posterior(result)
+fig.savefig("umc.pdf")
+```
+
+Each analysis result has a `.to_dict()` for JSON serialisation and roundtrip.
+
+---
+
 ## End_reason taxonomy
+
+The lab's canonical 7-class taxonomy. Print from the CLI any time with `ont-end-reason codes`:
 
 | Code | Full name | Class | Action |
 |---|---|---|---|
 | `SP` | signal_positive | **keep** | Complete read — always keep |
 | `UMC` | unblock_mux_change | truncated | Filter unless studying artifacts |
 | `MC` | mux_change | truncated | Filter |
-| `DUMC` | data_service_unblock_mux_change | truncated | Filter |
+| `DUMC` | data_service_unblock_mux_change | truncated | Filter (software-triggered) |
 | `PART` | partial | truncated | Filter |
 | `SN` | signal_negative | **failed** | Always filter |
 | `UNK` | unknown | unknown | Investigate distribution |
 
-Print the table from the CLI:
+`--keep SP` is the canonical recommendation (Table 1 of end-reason-paper). Use `--keep SP,UMC` to retain truncated reads for artifact studies.
+
+---
+
+## How the UMC posterior works
+
+The paper's novel analytic contribution, in one paragraph:
+
+Given an observed UMC read of length `o`, the molecule's true length `L` is *unknown but at least `o`* (it was truncated, not foreshortened). Fitting a lognormal prior `L ~ Lognormal(μ, σ²)` to `signal_positive` reads gives the prior on what completed reads look like; the posterior on a UMC read's true length is then the prior left-truncated at the observation:
+
+```
+P(L | L ≥ o)  ∝  Lognormal(L; μ, σ²) · 𝟙[L ≥ o]
+```
+
+The truncated mean has a closed form via the normal CDF's Mills ratio:
+
+```
+E[L | L ≥ o]  =  exp(μ + σ²/2) · Φ(σ - z) / (1 - F(o))    where  z = (log o − μ)/σ
+```
+
+Implementation: `scipy.stats.lognorm`, vectorised over all UMC reads. O(n).
+Aggregated, this is the paper's headline "sequence lost to adaptive sampling" estimate — runnable on any sequencing_summary.txt with one command.
+
+---
+
+## Testing
 
 ```bash
-ont-end-reason codes
+pytest                       # 143 tests, ~10s
+pytest --cov=ont_end_reason  # with coverage (currently 63%)
+ruff check .                 # lint
+mypy src/ont_end_reason      # type-check
 ```
 
-## CLI surface
+Coverage gate is 60% in CI; target is 70% in v0.3.0 once `filter/` is exercised with a real BAM fixture (issue [#7](https://github.com/Single-Molecule-Sequencing/ont-end-reason/issues/7)).
+
+Tests run against:
+- **Synthetic fixture** ([5000 reads, deterministic distributions](tests/fixtures/sequencing_summary_synthetic.txt)) for every analysis
+- **Hypothesis property tests** for the SP/UMC/MC taxonomy (round-trips, classification disjointness)
+- **CliRunner integration tests** for every subcommand's `--help` and dispatch
+
+---
+
+## Lab infrastructure integration
+
+`ont-end-reason` is part of the Single-Molecule-Sequencing org's analytic toolchain:
+
+| Repo | How it integrates |
+|---|---|
+| [end-reason-paper](https://github.com/Single-Molecule-Sequencing/end-reason-paper) | Companion paper. Claim atoms (`results.alignment_rate_filtered`, `results.snv_f1_filtered`, etc.) pin to this tool for reproducibility. |
+| [ont-ecosystem](https://github.com/Single-Molecule-Sequencing/ont-ecosystem) | Lab Claude Code skills `/end-reason` and `/end-reason-filter` will become thin wrappers that `pip install ont-end-reason` (tracked in [issue #6](https://github.com/Single-Molecule-Sequencing/ont-end-reason/issues/6)). |
+| [lab-onboarding](https://github.com/Single-Molecule-Sequencing/lab-onboarding) | Bundled in the canonical lab-repo manifest. Cloned automatically by `bash wsl/bootstrap.sh` on every new lab device. |
+| [End_Reason_Manuscript](https://github.com/Single-Molecule-Sequencing/End_Reason_Manuscript) | **Archived.** Each script in this repo carries a provenance header crediting commit `b47166a` of that source. |
+| [smaseq-qc](https://github.com/Single-Molecule-Sequencing/smaseq-qc) | Optional dependency for `analyze sma-metrics`. Tool detects-and-skips when missing. |
+
+---
+
+## Status / roadmap
+
+**Current: v0.2.0a1 (alpha)**
+
+- ✅ 9 analysis subcommands fully implemented
+- ✅ Bayesian posterior model for UMC truncation (paper's central novel analysis)
+- ✅ Interactive HTML reports with embedded Plotly
+- ✅ 143 tests, CI matrix on Python 3.10–3.13 × Ubuntu/macOS
+- ✅ [Interactive dashboard](https://single-molecule-sequencing.github.io/ont-end-reason/) with live examples
+- 🚧 Reproducibility CI against end-reason-paper claim atoms ([#4](https://github.com/Single-Molecule-Sequencing/ont-end-reason/issues/4))
+- 🚧 Parallel sharded BAM filtering ([#5](https://github.com/Single-Molecule-Sequencing/ont-end-reason/issues/5))
+- 🚧 Lab-skill thin-wrap migration after PyPI release ([#6](https://github.com/Single-Molecule-Sequencing/ont-end-reason/issues/6))
+- ⏳ conda-forge feedstock (post-v0.1.0 PyPI)
+
+See [`CHANGELOG.md`](CHANGELOG.md) for per-release detail and [open issues](https://github.com/Single-Molecule-Sequencing/ont-end-reason/issues) for roadmap items.
+
+---
+
+## Citing
+
+If you use `ont-end-reason` in published work, please cite the companion paper:
 
 ```
-ont-end-reason <subcommand>
-├── discover     find POD5/Fast5/summary files; emit a manifest
-├── tag          tag a BAM with end_reason from sequencing_summary
-├── filter       filter a tagged BAM by end_reason
-├── export-fastq convert a filtered BAM to FASTQ for NanoPack tools
-├── stats        streaming QC for PromethION-scale sequencing_summary
-├── analyze      eight analysis types (distribution/length/quality/temporal/...)
-├── figure       reproduce paper figures (fig3, fig5, fig6, supplementary)
-├── report       composed static or interactive HTML reports
-├── codes        print the end_reason taxonomy
-└── schema       print the canonical sequencing_summary columns
+Athey BD et al. (in preparation). End reason filtering for accurate analysis
+of Oxford Nanopore sequencing data. Single-Molecule-Sequencing Lab,
+University of Michigan.
+https://github.com/Single-Molecule-Sequencing/end-reason-paper
 ```
 
-Each subcommand has its own `--help` with full flag documentation.
+Machine-readable citation metadata is in [`CITATION.cff`](CITATION.cff).
 
-## Python API
-
-```python
-from ont_end_reason import discover, analyze, plot
-from ont_end_reason.viz.static import plot_distribution
-from ont_end_reason.viz.interactive import interactive_distribution
-
-manifest = discover("/path/to/run")
-result = analyze.distribution(manifest.summaries[0])
-fig = plot_distribution(result)
-fig.savefig("dist.pdf")
-```
-
-Every analysis function returns a typed dataclass with structured fields.
-Every plot function returns either `matplotlib.figure.Figure` or
-`plotly.graph_objects.Figure` so callers can compose, embed, or save in
-whatever form they need.
-
-## Status — v0.1.0 alpha
-
-- ✅ Discovery, tagging, filtering, FASTQ export, streaming QC
-- ✅ End-reason distribution analysis + bar charts
-- ✅ Interactive HTML reports
-- 🚧 Length / Q-score GMM / temporal / signal-trace analyses
-  (scaffolded — see [issues labelled `analysis`](https://github.com/Single-Molecule-Sequencing/ont-end-reason/issues?q=label%3Aanalysis))
-- 🚧 Paper-figure reproducers (fig3/5/6 + supplementary)
-- ⏳ Reproducibility CI against end-reason-paper claim atoms
-
-See [docs/superpowers/specs/2026-05-12-ont-end-reason-design.md](docs/superpowers/specs/2026-05-12-ont-end-reason-design.md)
-for the full design, scope contract, and roadmap.
-
-## How this relates to the lab's skills
-
-The `/end-reason` and `/end-reason-filter` Claude Code skills in
-[ont-ecosystem](https://github.com/Single-Molecule-Sequencing/ont-ecosystem)
-are thin wrappers that `pip install` this package and delegate to its CLI.
-Same code path internal and external, one source of truth.
-
-## Citation
-
-If you use this tool, please cite the companion paper (see [`CITATION.cff`](CITATION.cff)).
+---
 
 ## License
 
 MIT — see [`LICENSE`](LICENSE).
+
+---
+
+<div align="center">
+
+Built by the [Athey Lab](https://github.com/Single-Molecule-Sequencing) at the University of Michigan.
+
+[Dashboard](https://single-molecule-sequencing.github.io/ont-end-reason/) ·
+[Issues](https://github.com/Single-Molecule-Sequencing/ont-end-reason/issues) ·
+[CHANGELOG](CHANGELOG.md) ·
+[Design spec](docs/superpowers/specs/2026-05-12-ont-end-reason-design.md)
+
+</div>

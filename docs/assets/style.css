@@ -1,0 +1,306 @@
+/* ont-end-reason dashboard styles */
+
+:root {
+  --fg: #1a1a1a;
+  --fg-muted: #555;
+  --fg-faint: #888;
+  --bg: #fafafa;
+  --card: #ffffff;
+  --accent: #2c5f8d;
+  --accent-light: #e8f0f7;
+  --accent-strong: #1a4570;
+  --ok: #2ca02c;
+  --warn: #ff7f0e;
+  --bad: #d62728;
+  --border: #e0e0e0;
+  --code-bg: #f4f6f8;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.07);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+               "Helvetica Neue", sans-serif;
+  color: var(--fg);
+  background: var(--bg);
+  margin: 0;
+  line-height: 1.55;
+  font-size: 16px;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+code, pre {
+  font-family: "SF Mono", Monaco, "Fira Code", Consolas, monospace;
+  font-size: 0.92em;
+}
+
+code {
+  background: var(--code-bg);
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+  font-size: 0.88em;
+}
+
+pre {
+  background: var(--code-bg);
+  padding: 1em 1.2em;
+  border-radius: 6px;
+  overflow-x: auto;
+  border-left: 3px solid var(--accent);
+}
+
+pre code { background: transparent; padding: 0; font-size: 0.85em; }
+
+/* ─── Header / hero ────────────────────────────────────────── */
+header.hero {
+  background: linear-gradient(135deg, var(--accent-strong) 0%, var(--accent) 100%);
+  color: white;
+  padding: 3em 1.5em 4em;
+  text-align: center;
+}
+
+.hero h1 {
+  margin: 0 0 0.3em;
+  font-size: 2.4em;
+  font-weight: 700;
+}
+
+.hero .tagline {
+  font-size: 1.2em;
+  opacity: 0.92;
+  max-width: 700px;
+  margin: 0 auto 1.5em;
+}
+
+.hero-cta {
+  display: inline-flex;
+  gap: 0.8em;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.hero-cta a {
+  background: white;
+  color: var(--accent-strong);
+  padding: 0.7em 1.4em;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: transform 0.15s ease;
+}
+
+.hero-cta a:hover {
+  text-decoration: none;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.hero-cta a.secondary {
+  background: transparent;
+  color: white;
+  border: 1.5px solid rgba(255, 255, 255, 0.7);
+}
+
+/* ─── Headline stat strip ─────────────────────────────────── */
+.headline-strip {
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  padding: 1.5em 1em;
+  text-align: center;
+}
+
+.headline-strip .stats {
+  display: flex;
+  justify-content: center;
+  gap: 3em;
+  flex-wrap: wrap;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.headline-strip .stat {
+  text-align: center;
+}
+
+.headline-strip .stat-value {
+  font-size: 2em;
+  font-weight: 700;
+  color: var(--accent-strong);
+  display: block;
+}
+
+.headline-strip .stat-label {
+  font-size: 0.85em;
+  color: var(--fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ─── Layout ──────────────────────────────────────────────── */
+main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2em 1.5em 5em;
+}
+
+section {
+  margin: 3em 0;
+}
+
+section h2 {
+  font-size: 1.8em;
+  margin: 0 0 0.5em;
+  color: var(--fg);
+  border-bottom: 2px solid var(--accent);
+  padding-bottom: 0.3em;
+  display: inline-block;
+}
+
+section h3 {
+  font-size: 1.25em;
+  margin: 1.8em 0 0.5em;
+  color: var(--fg);
+}
+
+section p { color: var(--fg-muted); }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5em 1.8em;
+  margin: 1em 0;
+  box-shadow: var(--shadow);
+}
+
+.card.umc-highlight {
+  border-left: 4px solid var(--ok);
+  background: linear-gradient(to right, #f0f9f0 0%, var(--card) 30%);
+}
+
+/* ─── Subcommand cards grid ───────────────────────────────── */
+.cmd-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1em;
+  margin-top: 1em;
+}
+
+.cmd-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.2em 1.3em;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.cmd-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+}
+
+.cmd-card .cmd-name {
+  font-family: "SF Mono", Monaco, monospace;
+  font-size: 1.05em;
+  font-weight: 600;
+  color: var(--accent-strong);
+  margin: 0 0 0.4em;
+}
+
+.cmd-card p {
+  margin: 0;
+  font-size: 0.92em;
+  color: var(--fg-muted);
+}
+
+/* ─── Figure gallery ──────────────────────────────────────── */
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.2em;
+  margin-top: 1em;
+}
+
+.gallery-item {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.gallery-item img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.gallery-item .caption {
+  padding: 0.8em 1em;
+  font-size: 0.9em;
+  color: var(--fg-muted);
+}
+
+.gallery-item .caption strong {
+  color: var(--fg);
+  display: block;
+  margin-bottom: 0.2em;
+}
+
+/* ─── Interactive chart container ─────────────────────────── */
+.chart-wrapper {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1em;
+  margin: 1em 0;
+}
+
+/* ─── Status badges ───────────────────────────────────────── */
+.status-OK { color: var(--ok); font-weight: 600; }
+.status-CHECK { color: var(--warn); font-weight: 600; }
+.status-FAIL { color: var(--bad); font-weight: 600; }
+
+/* ─── Tutorial cards ──────────────────────────────────────── */
+.tutorial-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1em;
+}
+
+.tutorial-list li {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  padding: 1em 1.2em;
+  border-radius: 4px;
+}
+
+.tutorial-list strong { display: block; margin-bottom: 0.3em; }
+.tutorial-list small { color: var(--fg-faint); }
+
+/* ─── Footer ──────────────────────────────────────────────── */
+footer {
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  padding: 2em 1.5em;
+  text-align: center;
+  color: var(--fg-muted);
+  font-size: 0.9em;
+}
+
+footer a { color: var(--accent); }
+
+/* ─── Responsive ──────────────────────────────────────────── */
+@media (max-width: 720px) {
+  .hero h1 { font-size: 1.7em; }
+  .hero .tagline { font-size: 1em; }
+  .headline-strip .stats { gap: 1.5em; }
+  .headline-strip .stat-value { font-size: 1.5em; }
+  main { padding: 1.5em 1em 3em; }
+  section h2 { font-size: 1.4em; }
+}

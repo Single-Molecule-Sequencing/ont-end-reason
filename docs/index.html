@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ont-end-reason — Oxford Nanopore end_reason toolkit</title>
+  <meta name="description" content="Comprehensive CLI for Oxford Nanopore end_reason analysis. Tag, filter, analyse, visualise. Companion to the end-reason paper.">
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+</head>
+<body>
+
+<header class="hero">
+  <h1>🧬 ont-end-reason</h1>
+  <p class="tagline">
+    Comprehensive CLI for Oxford Nanopore <code style="background:rgba(255,255,255,.15);color:white">end_reason</code> analysis.
+    Discover, tag, filter, analyse, and visualise read-termination patterns —
+    companion to the end-reason paper.
+  </p>
+  <div class="hero-cta">
+    <a href="https://github.com/Single-Molecule-Sequencing/ont-end-reason">⭐ View on GitHub</a>
+    <a href="#install" class="secondary">📦 Install</a>
+    <a href="#examples" class="secondary">🚀 Examples</a>
+    <a href="#how-it-works" class="secondary">🔬 How it works</a>
+  </div>
+</header>
+
+<div class="headline-strip">
+  <div class="stats">
+    <div class="stat">
+      <span class="stat-value">9</span>
+      <span class="stat-label">analysis subcommands</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">~3 Mb</span>
+      <span class="stat-label">sequence "unmasked" on demo data</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">143</span>
+      <span class="stat-label">tests passing</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">63%</span>
+      <span class="stat-label">test coverage</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">MIT</span>
+      <span class="stat-label">license</span>
+    </div>
+  </div>
+</div>
+
+<main>
+
+<section id="why">
+  <h2>Why this tool?</h2>
+  <p>
+    Oxford Nanopore sequencers tag every read with an <code>end_reason</code>
+    explaining why sequencing stopped. <strong>A read can have high base quality (Q&gt;20)
+    and still be truncated or rejected by adaptive sampling</strong> — filtering by Q-score
+    alone is not enough for accurate downstream analysis.
+  </p>
+  <p>
+    <code>ont-end-reason</code> unifies the eight published analyses from the end-reason
+    paper into a single PyPI-installable CLI, including the paper's novel
+    <em>posterior length model</em> for adaptive-sampling-truncated reads.
+  </p>
+</section>
+
+<section id="install">
+  <h2>Install</h2>
+  <pre><code># static figures only
+pip install ont-end-reason
+
+# + Plotly for interactive HTML reports
+pip install "ont-end-reason[interactive]"
+
+# Development (clone the repo)
+git clone https://github.com/Single-Molecule-Sequencing/ont-end-reason.git
+cd ont-end-reason
+pip install -e ".[dev,interactive]"</code></pre>
+</section>
+
+<section id="quickstart">
+  <h2>Quickstart</h2>
+  <p>Five commands cover the canonical pipeline.</p>
+  <pre><code># 1. Inventory a sequencing-run directory
+ont-end-reason discover /path/to/run --manifest run.json
+
+# 2. Tag a BAM with end_reason from sequencing_summary.txt
+ont-end-reason tag --summary sequencing_summary.txt --bam in.bam --out tagged.bam
+
+# 3. Filter to complete reads only (signal_positive)
+ont-end-reason filter --bam tagged.bam --keep SP --out complete.bam
+
+# 4. Run the paper's central novel analysis
+ont-end-reason analyze umc-posterior sequencing_summary.txt --plot umc.pdf
+
+# 5. Build a self-contained 6-section HTML report
+ont-end-reason report interactive sequencing_summary.txt --out report.html</code></pre>
+</section>
+
+<section id="commands">
+  <h2>Subcommand reference</h2>
+  <p>Nine analysis subcommands, four filter operations, three figure reproducers.</p>
+
+  <h3>Filter operations</h3>
+  <div class="cmd-grid">
+    <div class="cmd-card">
+      <p class="cmd-name">discover</p>
+      <p>Walk a directory and emit a JSON manifest of POD5 / Fast5 / sequencing_summary / BAM / FASTQ files.</p>
+    </div>
+    <div class="cmd-card">
+      <p class="cmd-name">tag</p>
+      <p>Tag a BAM with end_reason metadata from sequencing_summary.txt. Streaming; PromethION-safe.</p>
+    </div>
+    <div class="cmd-card">
+      <p class="cmd-name">filter</p>
+      <p>Keep / drop reads by end_reason short code (SP, UMC, MC, …) with parallel I/O.</p>
+    </div>
+    <div class="cmd-card">
+      <p class="cmd-name">export-fastq</p>
+      <p>Convert a filtered BAM to FASTQ for NanoPack tools (NanoPlot, NanoFilt, Filtlong).</p>
+    </div>
+    <div class="cmd-card">
+      <p class="cmd-name">stats</p>
+      <p>Streaming summary stats from sequencing_summary.txt. Bounded RAM regardless of file size.</p>
+    </div>
+  </div>
+
+  <h3>Analysis (analyze &lt;subcommand&gt;)</h3>
+  <div class="cmd-grid">
+    <div class="cmd-card">
+      <p class="cmd-name">analyze distribution</p>
+      <p>Per-end_reason counts + OK/CHECK/FAIL quality gate based on signal_positive %.</p>
+    </div>
+    <div class="cmd-card">
+      <p class="cmd-name">analyze length</p>
+      <p>Per-end_reason length distributions: mean, median, percentiles, N50, log-x histogram.</p>
+    </div>
+    <div class="cmd-card">
+      <p class="cmd-name">analyze quality</p>
+      <p>Q-score distributions per end_reason with Gaussian Mixture Model fit (BIC-selected k).</p>
+    </div>
+    <div class="cmd-card">
+      <p class="cmd-name">analyze temporal</p>
+      <p>End_reason rates over sequencing-run time. Flowcell-degradation diagnostic.</p>
+    </div>
+    <div class="cmd-card">
+      <p class="cmd-name">analyze hypothesis</p>
+      <p>Mann-Whitney U / KS tests between two end_reason populations with Cliff's Δ.</p>
+    </div>
+    <div class="cmd-card" style="border-left: 4px solid var(--ok); background: linear-gradient(to right, #f0f9f0, white 50%);">
+      <p class="cmd-name">analyze umc-posterior ⭐</p>
+      <p>The paper's <em>novel</em> analysis — Bayesian posterior over true UMC length given adaptive-sampling truncation.</p>
+    </div>
+    <div class="cmd-card">
+      <p class="cmd-name">analyze signal-trace</p>
+      <p>Extract and visualise the raw current trace for a single POD5 read.</p>
+    </div>
+    <div class="cmd-card">
+      <p class="cmd-name">analyze sma-metrics</p>
+      <p>Optional bridge to the <code>smaseq-qc</code> package's per-read metrics.</p>
+    </div>
+    <div class="cmd-card">
+      <p class="cmd-name">analyze tables</p>
+      <p>Generate summary / per-class / quality tables as TSV / CSV / markdown / LaTeX.</p>
+    </div>
+  </div>
+
+  <h3>Paper figure reproducers</h3>
+  <div class="cmd-grid">
+    <div class="cmd-card"><p class="cmd-name">figure fig3</p><p>End-reason distribution bar chart (paper Figure 3).</p></div>
+    <div class="cmd-card"><p class="cmd-name">figure fig5</p><p>Q-score violins per end_reason (paper Figure 5).</p></div>
+    <div class="cmd-card"><p class="cmd-name">figure fig6</p><p>UMC posterior diagram (paper Figure 6).</p></div>
+    <div class="cmd-card"><p class="cmd-name">figure supplementary</p><p>Auto-render the paper's supplementary figures (in development).</p></div>
+  </div>
+
+  <h3>Composed reports</h3>
+  <div class="cmd-grid">
+    <div class="cmd-card"><p class="cmd-name">report interactive</p><p>6-section self-contained HTML report with embedded Plotly charts.</p></div>
+    <div class="cmd-card"><p class="cmd-name">report static</p><p>Paginated PDF report (v0.3.0 roadmap).</p></div>
+  </div>
+</section>
+
+<section id="examples">
+  <h2>Live examples</h2>
+  <p>
+    All charts and numbers below were generated by running the tool against the
+    <a href="https://github.com/Single-Molecule-Sequencing/ont-end-reason/blob/main/tests/fixtures/sequencing_summary_synthetic.txt">synthetic
+    5000-read fixture</a> shipped with the repo. To reproduce on your own data,
+    swap the fixture path for your <code>sequencing_summary.txt</code>.
+  </p>
+
+  <h3>End reason distribution</h3>
+  <p>Status <span class="status-OK">OK</span> on the fixture — 80% signal_positive / 12% UMC.</p>
+  <pre><code>$ ont-end-reason analyze distribution sequencing_summary.txt</code></pre>
+  <div class="chart-wrapper">
+    <!--EMBED:examples/charts/distribution.html-->
+  </div>
+
+  <h3>UMC posterior length — the paper's central novel analysis</h3>
+  <div class="card umc-highlight">
+    <p>
+      Given that UMC reads are truncated at the adaptive-sampling decision point, the
+      observed length is a <em>lower bound</em> on the molecule's true length. Fitting a
+      lognormal prior to <code>signal_positive</code> reads and applying truncated-posterior
+      Bayesian inference per UMC read gives:
+    </p>
+    <ul>
+      <li>Observed mean length: <strong>926 bp</strong></li>
+      <li>Posterior expected true mean: <strong>5,868 bp</strong></li>
+      <li>Per-read bonus (lost sequence): <strong>4,942 bp / read</strong></li>
+      <li>Total bonus across 600 UMC reads: <strong>~3 Mb</strong></li>
+    </ul>
+    <p style="margin-bottom:0;font-size:0.92em">
+      The truncated-lognormal posterior runs in O(n) over the UMC reads using scipy.
+      For real PromethION runs with millions of UMC reads, the recovered sequence
+      scales linearly.
+    </p>
+  </div>
+  <pre><code>$ ont-end-reason analyze umc-posterior sequencing_summary.txt --plot umc.pdf
+UMC reads:              600
+Prior class:            signal_positive  (log μ=8.488, log σ=0.600)
+Observed mean length:        926.2 bp
+Posterior expected mean:    5868.1 bp
+Posterior bonus mean:       4941.9 bp/read
+Posterior bonus total:       2,965,111 bp</code></pre>
+  <div class="card" style="text-align:center; padding:1em;">
+    <img src="figures/umc_posterior.png" alt="UMC posterior figure" style="max-width:100%; height:auto;">
+  </div>
+
+  <h3>Per-end_reason length distributions</h3>
+  <pre><code>$ ont-end-reason analyze length sequencing_summary.txt</code></pre>
+  <div class="card" style="text-align:center; padding:1em;">
+    <img src="figures/length.png" alt="Length distribution" style="max-width:100%; height:auto;">
+  </div>
+
+  <h3>Q-score distributions with GMM fit</h3>
+  <pre><code>$ ont-end-reason analyze quality sequencing_summary.txt --plot violins.pdf</code></pre>
+  <div class="card" style="text-align:center; padding:1em;">
+    <img src="figures/quality.png" alt="Q-score violins" style="max-width:100%; height:auto;">
+  </div>
+
+  <h3>Temporal patterns</h3>
+  <pre><code>$ ont-end-reason analyze temporal sequencing_summary.txt --bin-seconds 3600</code></pre>
+  <div class="card" style="text-align:center; padding:1em;">
+    <img src="figures/temporal.png" alt="Temporal stacked-area" style="max-width:100%; height:auto;">
+  </div>
+</section>
+
+<section id="how-it-works">
+  <h2>How the UMC posterior works</h2>
+  <p>
+    The novel analytic contribution. Given:
+  </p>
+  <ul>
+    <li><strong>Observed UMC length</strong> <code>o</code> — a lower bound on true length</li>
+    <li><strong>Lognormal prior</strong> fit to <code>signal_positive</code> reads:
+        <code>L ~ Lognormal(μ, σ²)</code></li>
+  </ul>
+  <p>The posterior on true length given truncation is the prior <em>left-truncated</em> at the observation:</p>
+  <pre><code>P(L | L &gt;= o)  ∝  Lognormal(L; μ, σ²) · 𝟙[L &gt;= o]</code></pre>
+  <p>The truncated mean has a closed form via the Mills ratio of the normal CDF:</p>
+  <pre><code>E[L | L &gt;= o]  =  exp(μ + σ²/2) · Φ(σ - z) / (1 - F(o))   where   z = (log(o) - μ) / σ</code></pre>
+  <p>
+    Implementation: <code>scipy.stats.lognorm</code>, vectorised over the UMC reads.
+    Aggregated over all UMC reads gives the paper's headline "unobserved sequence"
+    estimate — a number you can compute on any sequencing_summary.txt with one
+    command and compare directly to the paper's published value.
+  </p>
+</section>
+
+<section id="tutorials">
+  <h2>Tutorials</h2>
+  <ul class="tutorial-list">
+    <li>
+      <strong>Reproducing the paper's claim atoms</strong>
+      <small>Step-by-step: take a public ONT run, install the tool, run each
+      analysis, and compare numbers to the paper.</small>
+      <p style="margin:0.5em 0 0;"><em>Coming in v0.3.0</em> — tracked in
+      <a href="https://github.com/Single-Molecule-Sequencing/ont-end-reason/issues/4">issue #4</a>.</p>
+    </li>
+    <li>
+      <strong>Filtering for variant calling</strong>
+      <small>Why <code>--keep SP</code> matters before calling SNVs from ONT
+      data, and how filtering by Q-score alone is insufficient.</small>
+      <p style="margin:0.5em 0 0;"><a href="https://github.com/Single-Molecule-Sequencing/End_Reason_Manuscript/blob/main/docs/tutorials/02-end-reason-filtering.md">Original tutorial in the archived paper repo →</a></p>
+    </li>
+    <li>
+      <strong>Diagnosing flowcell degradation</strong>
+      <small>Using <code>analyze temporal</code> to spot rising UMC rates late
+      in a run.</small>
+      <p style="margin:0.5em 0 0;"><em>Coming in v0.3.0</em></p>
+    </li>
+    <li>
+      <strong>Library prep optimisation</strong>
+      <small>Comparing two runs' end_reason profiles to evaluate prep changes.</small>
+      <p style="margin:0.5em 0 0;"><em>Coming in v0.3.0</em></p>
+    </li>
+  </ul>
+</section>
+
+<section id="gallery">
+  <h2>Figure gallery</h2>
+  <p>Static publication-ready PDFs (also available via <code>--plot</code> on every CLI command).</p>
+  <div class="gallery">
+    <div class="gallery-item">
+      <img src="figures/distribution.png" alt="distribution">
+      <div class="caption"><strong>End reason distribution</strong>
+        <code>ont-end-reason figure fig3 ...</code></div>
+    </div>
+    <div class="gallery-item">
+      <img src="figures/length.png" alt="length">
+      <div class="caption"><strong>Length distribution per end_reason</strong>
+        <code>ont-end-reason analyze length ... --plot</code></div>
+    </div>
+    <div class="gallery-item">
+      <img src="figures/quality.png" alt="quality">
+      <div class="caption"><strong>Q-score violins</strong>
+        <code>ont-end-reason figure fig5 ...</code></div>
+    </div>
+    <div class="gallery-item">
+      <img src="figures/temporal.png" alt="temporal">
+      <div class="caption"><strong>Temporal rates</strong>
+        <code>ont-end-reason analyze temporal ... --plot</code></div>
+    </div>
+    <div class="gallery-item">
+      <img src="figures/umc_posterior.png" alt="umc_posterior">
+      <div class="caption"><strong>UMC posterior length (paper Fig 6)</strong>
+        <code>ont-end-reason figure fig6 ...</code></div>
+    </div>
+  </div>
+</section>
+
+<section id="integration">
+  <h2>Lab infrastructure</h2>
+  <p>
+    <code>ont-end-reason</code> is part of the Single-Molecule-Sequencing org's analytic
+    toolchain and integrates with several lab-wide components:
+  </p>
+  <ul>
+    <li>
+      <strong>Companion paper:</strong>
+      <a href="https://github.com/Single-Molecule-Sequencing/end-reason-paper">end-reason-paper</a>
+      — the paper's claim atoms (alignment_rate_filtered, snv_f1_filtered, etc.)
+      pin to this tool for reproducibility.
+    </li>
+    <li>
+      <strong>Lab Claude Code skills:</strong>
+      <code>/end-reason</code> and <code>/end-reason-filter</code> in
+      <a href="https://github.com/Single-Molecule-Sequencing/ont-ecosystem">ont-ecosystem</a>.
+      After v0.1.0 PyPI, these become thin wrappers that
+      <code>pip install ont-end-reason</code> and delegate to the CLI — one source
+      of truth, no drift.
+    </li>
+    <li>
+      <strong>Onboarding:</strong> bundled in the canonical lab-repo manifest at
+      <a href="https://github.com/Single-Molecule-Sequencing/lab-onboarding">lab-onboarding</a>,
+      cloned automatically by <code>bash wsl/bootstrap.sh</code> on any new lab device.
+    </li>
+    <li>
+      <strong>Archived predecessor:</strong>
+      <a href="https://github.com/Single-Molecule-Sequencing/End_Reason_Manuscript">End_Reason_Manuscript</a>
+      (read-only). Every script in this repo carries a provenance header
+      crediting commit b47166a of the archived source.
+    </li>
+  </ul>
+</section>
+
+<section id="cite">
+  <h2>Citing</h2>
+  <p>If you use <code>ont-end-reason</code> in published work, please cite the companion paper:</p>
+  <pre><code>Athey BD et al. (in preparation). End reason filtering for accurate
+analysis of Oxford Nanopore sequencing data. Single-Molecule-Sequencing
+Lab, University of Michigan. https://github.com/Single-Molecule-Sequencing/end-reason-paper</code></pre>
+  <p>Machine-readable citation metadata is in
+    <a href="https://github.com/Single-Molecule-Sequencing/ont-end-reason/blob/main/CITATION.cff">CITATION.cff</a>.</p>
+</section>
+
+</main>
+
+<footer>
+  <p>
+    Built by the
+    <a href="https://github.com/Single-Molecule-Sequencing">Athey Lab</a>
+    at the University of Michigan.
+    Source on <a href="https://github.com/Single-Molecule-Sequencing/ont-end-reason">GitHub</a>.
+    MIT licensed.
+  </p>
+  <p>
+    Tool version <code id="version-pin">0.2.0a1</code>.
+    Dashboard generated from
+    <a href="https://github.com/Single-Molecule-Sequencing/ont-end-reason/blob/main/docs/generate_examples.py">docs/generate_examples.py</a>
+    on the
+    <a href="https://github.com/Single-Molecule-Sequencing/ont-end-reason/blob/main/tests/fixtures/sequencing_summary_synthetic.txt">synthetic test fixture</a>.
+  </p>
+</footer>
+
+<script>
+  // Inject the pre-generated Plotly chart fragment into the placeholder
+  async function injectChart(placeholderText, chartUrl) {
+    try {
+      const resp = await fetch(chartUrl);
+      if (!resp.ok) return;
+      const html = await resp.text();
+      const all = document.body.innerHTML;
+      const replaced = all.replace(`<!--EMBED:${placeholderText}-->`, html);
+      if (replaced !== all) {
+        document.body.innerHTML = replaced;
+        // Plotly scripts inside the fragment need to be re-evaluated after
+        // innerHTML replacement; the simplest portable approach is to find
+        // them and eval, but plotly-2.x emits inline JS that runs on insert
+        // via document.write — we use a manual rebuild instead.
+        const scripts = document.body.querySelectorAll("script");
+        scripts.forEach((s) => {
+          if (s.dataset.ranOnce) return;
+          if (s.src) return;  // external scripts are fine
+          const fresh = document.createElement("script");
+          fresh.text = s.text;
+          fresh.dataset.ranOnce = "1";
+          s.parentNode.replaceChild(fresh, s);
+        });
+      }
+    } catch (err) {
+      console.warn("chart inject failed", chartUrl, err);
+    }
+  }
+  injectChart("examples/charts/distribution.html", "examples/charts/distribution.html");
+</script>
+
+</body>
+</html>

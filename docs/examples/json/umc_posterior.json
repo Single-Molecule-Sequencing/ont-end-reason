@@ -1,0 +1,17 @@
+{
+  "n_umc_reads": 600,
+  "prior_class": "signal_positive",
+  "prior_log_mu": 8.4882,
+  "prior_log_sigma": 0.6,
+  "observed_mean": 926.21,
+  "observed_median": 810.0,
+  "posterior_expected_true_mean": 5868.06,
+  "posterior_expected_true_median": 4862.16,
+  "posterior_bonus_mean": 4941.85,
+  "posterior_bonus_total": 2965111.02,
+  "credible_interval_95_per_read_mean": [
+    1618.09,
+    15791.5
+  ],
+  "source": "/home/farnum248/repos/ont-end-reason/tests/fixtures/sequencing_summary_synthetic.txt"
+}

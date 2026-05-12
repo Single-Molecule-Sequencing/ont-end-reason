@@ -1,0 +1,96 @@
+{
+  "total_reads": 5000,
+  "per_class": {
+    "data_service_unblock_mux_change": {
+      "n": 250,
+      "mean": 17.297,
+      "median": 17.435,
+      "std": 2.932,
+      "p25": 15.193,
+      "p75": 19.478,
+      "p95": 21.71,
+      "gmm_chosen_k": 1,
+      "gmm_bic": 1258.401,
+      "gmm_components": [
+        {
+          "weight": 1.0,
+          "mean": 17.297,
+          "sd": 2.932
+        }
+      ]
+    },
+    "mux_change": {
+      "n": 100,
+      "mean": 20.431,
+      "median": 20.635,
+      "std": 2.821,
+      "p25": 18.772,
+      "p75": 22.31,
+      "p95": 24.355,
+      "gmm_chosen_k": 1,
+      "gmm_bic": 500.383,
+      "gmm_components": [
+        {
+          "weight": 1.0,
+          "mean": 20.431,
+          "sd": 2.821
+        }
+      ]
+    },
+    "signal_negative": {
+      "n": 50,
+      "mean": 8.728,
+      "median": 8.689,
+      "std": 2.653,
+      "p25": 7.17,
+      "p75": 10.567,
+      "p95": 12.67,
+      "gmm_chosen_k": 1,
+      "gmm_bic": 247.292,
+      "gmm_components": [
+        {
+          "weight": 1.0,
+          "mean": 8.728,
+          "sd": 2.653
+        }
+      ]
+    },
+    "signal_positive": {
+      "n": 4000,
+      "mean": 22.0,
+      "median": 21.95,
+      "std": 2.512,
+      "p25": 20.346,
+      "p75": 23.654,
+      "p95": 26.186,
+      "gmm_chosen_k": 1,
+      "gmm_bic": 18737.051,
+      "gmm_components": [
+        {
+          "weight": 1.0,
+          "mean": 22.0,
+          "sd": 2.512
+        }
+      ]
+    },
+    "unblock_mux_change": {
+      "n": 600,
+      "mean": 18.255,
+      "median": 18.282,
+      "std": 3.018,
+      "p25": 16.251,
+      "p75": 20.203,
+      "p95": 23.235,
+      "gmm_chosen_k": 1,
+      "gmm_bic": 3041.154,
+      "gmm_components": [
+        {
+          "weight": 1.0,
+          "mean": 18.255,
+          "sd": 3.018
+        }
+      ]
+    }
+  },
+  "source": "/home/farnum248/repos/ont-end-reason/tests/fixtures/sequencing_summary_synthetic.txt"
+}

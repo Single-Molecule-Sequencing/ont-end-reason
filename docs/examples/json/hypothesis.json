@@ -1,0 +1,38 @@
+{
+  "length_test": {
+    "test": "mann-whitney",
+    "statistic": 2372955.5,
+    "p_value": 0.0,
+    "effect_size": 0.9775,
+    "n_a": 4000,
+    "n_b": 600,
+    "comparison": [
+      "signal_positive",
+      "unblock_mux_change"
+    ],
+    "column": "sequence_length_template",
+    "median_a": 4912.0,
+    "median_b": 810.0,
+    "notes": [
+      "Effect size large (|\u0394| \u2265 0.47)"
+    ]
+  },
+  "qscore_test": {
+    "test": "mann-whitney",
+    "statistic": 1990264.0,
+    "p_value": 1.297583136939621e-149,
+    "effect_size": 0.6586,
+    "n_a": 4000,
+    "n_b": 600,
+    "comparison": [
+      "signal_positive",
+      "unblock_mux_change"
+    ],
+    "column": "mean_qscore_template",
+    "median_a": 21.95,
+    "median_b": 18.282,
+    "notes": [
+      "Effect size large (|\u0394| \u2265 0.47)"
+    ]
+  }
+}

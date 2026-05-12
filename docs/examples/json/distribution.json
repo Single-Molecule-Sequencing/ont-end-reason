@@ -1,0 +1,23 @@
+{
+  "total_reads": 5000,
+  "quality_status": "OK",
+  "signal_positive_pct": 80.0,
+  "unblock_mux_pct": 12.0,
+  "data_service_pct": 5.0,
+  "counts": {
+    "data_service_unblock_mux_change": 250,
+    "signal_positive": 4000,
+    "unblock_mux_change": 600,
+    "signal_negative": 50,
+    "mux_change": 100
+  },
+  "percentages": {
+    "data_service_unblock_mux_change": 0.05,
+    "signal_positive": 0.8,
+    "unblock_mux_change": 0.12,
+    "signal_negative": 0.01,
+    "mux_change": 0.02
+  },
+  "interpretation": "Healthy: 80.0% complete reads. Adaptive sampling rejection rate is 12.0%.",
+  "source_format": "summary"
+}

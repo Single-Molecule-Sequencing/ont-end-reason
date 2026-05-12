@@ -1,0 +1,12 @@
+{
+  "tool_version": "0.2.0a1",
+  "fixture_reads": 5000,
+  "fixture_status": "OK",
+  "fixture_signal_positive_pct": 80.0,
+  "fixture_umc_pct": 12.0,
+  "umc_reads": 600,
+  "umc_observed_mean": 926.2,
+  "umc_posterior_mean": 5868.1,
+  "umc_bonus_per_read": 4941.9,
+  "umc_bonus_total": 2965111.0
+}
