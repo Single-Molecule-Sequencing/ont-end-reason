@@ -1,4 +1,0 @@
-# file: /home/farnum248/repos/ont-end-reason/src/ont_end_reason/codes.py
-# hypothesis_version: 6.151.14
-
-[',', 'DUMC', 'MC', 'PART', 'SN', 'SP', 'UMC', 'UNK', 'failed', 'keep', 'mux_change', 'partial', 'signal_negative', 'signal_positive', 'truncated', 'unblock_mux_change', 'unknown']

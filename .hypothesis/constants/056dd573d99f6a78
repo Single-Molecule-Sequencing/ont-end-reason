@@ -1,4 +1,0 @@
-# file: /home/farnum248/repos/ont-ecosystem/pytest_ont/suites.py
-# hypothesis_version: 6.151.14
-
-['*', ', ', '...', '.toml', '?', '[', 'none defined', 'pyproject.toml', 'pytest-ont', 'pytest.ini', 'rb', 'rootdir', 'setup.cfg', 'suites', 'tool']

@@ -1,4 +1,0 @@
-# file: /home/farnum248/repos/ont-end-reason/src/ont_end_reason/io/schema.py
-# hypothesis_version: 6.151.14
-
-['channel', 'duration', 'end_reason', 'mean_qscore_template', 'mux', 'read_id', 'start_time']

@@ -1,4 +1,0 @@
-# file: /home/farnum248/repos/ont-end-reason/src/ont_end_reason/cli.py
-# hypothesis_version: 6.151.14
-
-[300, 10000, '\nRecommended:', '%(message)s', '--bam', '--compress', '--debug', '--fastq', '--help', '--json', '--keep', '--manifest', '--max-reads', '--out', '--plot', '--quick', '--quiet', '--read-id', '--strict', '--summary', '--tag-name', '--threads', '-h', 'ER', 'Required:', '__main__', 'distribution', 'export-fastq', 'failed', 'fig3', 'fig5', 'fig6', 'gzip the output.', 'help_option_names', 'hypothesis', 'interactive', 'iso', 'json_out', 'keep', 'length', 'manifest_out', 'ont-end-reason', 'path', 'plot_out', 'pod5', 'quality', 'signal-trace', 'sma-metrics', 'sma_metrics', 'source', 'static', 'strict', 'supplementary', 'temporal', 'tight', 'truncated', 'umc-posterior', 'umc_posterior', 'unknown', '─']

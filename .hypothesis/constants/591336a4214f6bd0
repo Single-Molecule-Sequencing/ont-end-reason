@@ -1,4 +1,0 @@
-# file: /home/farnum248/repos/ont-end-reason/src/ont_end_reason/io/manifest.py
-# hypothesis_version: 6.151.14
-
-[1000000000, 'bams', 'fast5', 'fastqs', 'generated_at', 'generator', 'ont-end-reason', 'pod5', 'root', 'summaries', 'unknown']

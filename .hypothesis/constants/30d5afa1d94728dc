@@ -1,4 +1,0 @@
-# file: /home/farnum248/repos/ont-end-reason/src/ont_end_reason/analyze/distribution.py
-# hypothesis_version: 6.151.14
-
-[0.0, 100, 10000, 'CHECK', 'FAIL', 'OK', 'counts', 'data_service_pct', 'fast5', 'interpretation', 'percentages', 'pod5', 'quality_status', 'signal_positive', 'signal_positive_pct', 'source_format', 'summary', 'total_reads', 'unblock_mux_change', 'unblock_mux_pct', 'unknown']

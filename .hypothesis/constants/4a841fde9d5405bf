@@ -1,4 +1,0 @@
-# file: /home/farnum248/repos/ont-ecosystem/pytest_ont/coverage_map.py
-# hypothesis_version: 6.151.14
-
-['  (no tests found)', '--baseline', '--file', '--from-coverage', '--local', '--output', '-f', '-o', './', '/', '=', 'Commands', 'Coverage Map Summary', '\\', '__main__', 'build', 'command', 'generated', 'map', 'show', 'source_files', 'test_times', 'test_times_recorded', 'unique_tests', 'utf-8', 'version', 'w']

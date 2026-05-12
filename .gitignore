@@ -54,3 +54,6 @@ docs/_build/
 
 # Version file (auto-generated if using setuptools_scm; not used now)
 src/ont_end_reason/_version.py
+
+# Hypothesis property-test cache
+.hypothesis/

@@ -1,4 +1,0 @@
-# file: /home/farnum248/repos/ont-end-reason/src/ont_end_reason/io/discover.py
-# hypothesis_version: 6.151.14
-
-['*', '.bam', '.fast5', '.fastq', '.fastq.gz', '.fq', '.fq.gz', '.pod5', '.txt', 'bam', 'discover complete', 'fast5', 'fastq', 'pod5', 'sequencing_summary', 'stat failed', 'summary']

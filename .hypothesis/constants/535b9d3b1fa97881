@@ -1,4 +1,0 @@
-# file: /home/farnum248/repos/ont-end-reason/src/ont_end_reason/io/__init__.py
-# hypothesis_version: 6.151.14
-
-['Manifest', 'ReadRecord', 'detect_format', 'discover', 'extract_from_fast5', 'extract_from_pod5', 'extract_from_summary', 'validate_summary']
