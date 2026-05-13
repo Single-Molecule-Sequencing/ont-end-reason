@@ -22,19 +22,19 @@ Companion memory: `feedback_dogfood_from_source_paper.md`
 
 from __future__ import annotations
 
+import contextlib
 import sys
 from pathlib import Path
 from types import ModuleType
-from typing import Optional
 
 
 def _inline_import_lab_module(
     module_name: str,
     *,
     repo: str,
-    lib_subdir: Optional[str] = "lib",
-    repos_root: Optional[Path] = None,
-) -> Optional[ModuleType]:
+    lib_subdir: str | None = "lib",
+    repos_root: Path | None = None,
+) -> ModuleType | None:
     """Fallback identical to lab-papers' `cross_repo_import.import_lab_module`.
 
     Used only when lab-papers itself isn't cloned. Stays in sync with the
@@ -58,10 +58,8 @@ def _inline_import_lab_module(
         return __import__(module_name)
     except ImportError:
         if inserted:
-            try:
+            with contextlib.suppress(ValueError):
                 sys.path.remove(target_str)
-            except ValueError:
-                pass
         return None
 
 
@@ -85,10 +83,8 @@ def _load_canonical_importer():
             return import_lab_module
         except ImportError:
             if inserted:
-                try:
+                with contextlib.suppress(ValueError):
                     sys.path.remove(candidate_str)
-                except ValueError:
-                    pass
     return _inline_import_lab_module
 
 
