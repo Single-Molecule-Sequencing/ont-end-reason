@@ -9,7 +9,7 @@ submodules pull in matplotlib / plotly / pysam only when accessed.
 
 from __future__ import annotations
 
-__version__ = "0.2.0a1"
+__version__ = "0.2.0"
 
 # Re-export the public surface. Each lazy attribute resolves to its
 # implementation on first access so importing the package alone is fast.

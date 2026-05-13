@@ -250,29 +250,41 @@ def test_filter_parallel_matches_sequential_output(tmp_path: Path) -> None:
     assert _collect_query_names(seq_out) == _collect_query_names(par_out)
 
 
+def _resolve_bam_shard():
+    """Bridge-resolution helper: import canonical `lib.bam_shard`."""
+    from ont_end_reason._lab_bridge import import_lab_module
+
+    return import_lab_module("bam_shard", repo="ont-ecosystem", lib_subdir="lib")
+
+
 def test_scan_shard_boundaries_returns_n_shards(tmp_path: Path) -> None:
-    """Boundary scan produces approximately the requested shard count."""
-    from ont_end_reason.filter.filter import _scan_shard_boundaries
+    """Canonical bam_shard.scan, accessed through ont-end-reason's bridge,
+    produces approximately the requested shard count."""
+    bam_shard = _resolve_bam_shard()
+    if bam_shard is None:
+        pytest.skip("lib.bam_shard not on disk (ont-ecosystem sister repo missing)")
 
     read_ids = _read_first_n_ids(FIXTURE_SUMMARY, 100)
     raw = tmp_path / "raw.bam"
     _make_unaligned_bam(raw, read_ids)
 
-    pairs = _scan_shard_boundaries(raw, n_shards=4, target_reads_per_shard=25)
-    assert 2 <= len(pairs) <= 4
-    assert pairs[0][0] >= 0
-    assert pairs[-1][1] is None
-    for i in range(len(pairs) - 1):
-        assert pairs[i][1] == pairs[i + 1][0]
+    boundaries = bam_shard.scan(raw, n_shards=4, target_reads_per_shard=25)
+    assert 2 <= len(boundaries) <= 4
+    assert boundaries[0].start_voff >= 0
+    assert boundaries[-1].end_voff is None
+    for i in range(len(boundaries) - 1):
+        assert boundaries[i].end_voff == boundaries[i + 1].start_voff
 
 
 def test_scan_shard_boundaries_degenerate_small_input(tmp_path: Path) -> None:
-    """Inputs smaller than one shard return a single (start, None) pair."""
-    from ont_end_reason.filter.filter import _scan_shard_boundaries
+    """Inputs smaller than one shard return a single boundary with end_voff=None."""
+    bam_shard = _resolve_bam_shard()
+    if bam_shard is None:
+        pytest.skip("lib.bam_shard not on disk (ont-ecosystem sister repo missing)")
 
     read_ids = _read_first_n_ids(FIXTURE_SUMMARY, 3)
     raw = tmp_path / "raw.bam"
     _make_unaligned_bam(raw, read_ids)
-    pairs = _scan_shard_boundaries(raw, n_shards=8, target_reads_per_shard=1000)
-    assert len(pairs) == 1
-    assert pairs[0][1] is None
+    boundaries = bam_shard.scan(raw, n_shards=8, target_reads_per_shard=1000)
+    assert len(boundaries) == 1
+    assert boundaries[0].end_voff is None

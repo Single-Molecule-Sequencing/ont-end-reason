@@ -18,6 +18,11 @@ Two execution modes share the public `filter_bam()` entry point:
 The parallel path is on by default whenever `threads >= 2` and the input
 is large enough to be worth sharding (`MIN_READS_FOR_PARALLEL`). Below
 that threshold the sequential path runs even with `threads >= 2`.
+
+The BGZF shard partition itself lives in the lab-canonical
+`lib.bam_shard` (ont-ecosystem) — imported here via `_lab_bridge`.
+When the sister repo isn't on disk the inline fallback in `_lab_bridge`
+keeps this module operational.
 """
 
 from __future__ import annotations
@@ -29,10 +34,13 @@ from pathlib import Path
 
 import structlog
 
+from .._lab_bridge import import_lab_module
 from ..codes import parse_keep_list
 from ..errors import IOError as OntIOError
 
 log = structlog.get_logger(__name__)
+
+_bam_shard = import_lab_module("bam_shard", repo="ont-ecosystem", lib_subdir="lib")
 
 MIN_READS_FOR_PARALLEL = 50_000
 DEFAULT_SHARD_SIZE = 100_000
@@ -172,48 +180,6 @@ def _bam_size_exceeds(bam_path: Path, min_reads: int) -> bool:
         return False
 
 
-def _scan_shard_boundaries(
-    bam_path: Path, n_shards: int, target_reads_per_shard: int
-) -> list[tuple[int, int | None]]:
-    """Return up to `n_shards` (start_voff, end_voff) virtual-offset pairs.
-
-    Single sequential pass. Records `bam.tell()` every
-    `target_reads_per_shard` records so each shard owns a roughly equal
-    record-count slice. The last shard's end_voff is `None` (read to EOF).
-    """
-    boundaries, _ = _scan_shard_boundaries_with_count(bam_path, n_shards, target_reads_per_shard)
-    return boundaries
-
-
-def _scan_shard_boundaries_with_count(
-    bam_path: Path, n_shards: int, target_reads_per_shard: int
-) -> tuple[list[tuple[int, int | None]], int]:
-    """Like `_scan_shard_boundaries`, but also returns the total read count.
-
-    The count comes for free from the single sequential pass, so callers
-    that need it for downstream shard-count tuning avoid a second scan.
-    """
-    import pysam  # type: ignore[import-untyped]
-
-    starts: list[int] = []
-    total = 0
-    with pysam.AlignmentFile(str(bam_path), "rb", check_sq=False) as bam_in:
-        starts.append(bam_in.tell())
-        count_in_shard = 0
-        for _ in bam_in.fetch(until_eof=True):
-            total += 1
-            count_in_shard += 1
-            if count_in_shard >= target_reads_per_shard and len(starts) < n_shards:
-                starts.append(bam_in.tell())
-                count_in_shard = 0
-    if len(starts) <= 1:
-        return [(starts[0], None)], total
-    pairs = [
-        (start, starts[i + 1] if i + 1 < len(starts) else None) for i, start in enumerate(starts)
-    ]
-    return pairs, total
-
-
 def _worker_filter_shard(
     args: tuple[str, str, frozenset[str], str, int, int | None],
 ) -> tuple[str, int, int]:
@@ -263,12 +229,18 @@ def _filter_parallel(
     except ImportError as exc:
         raise OntIOError("filter_bam requires pysam") from exc
 
+    if _bam_shard is None:
+        log.info("lib.bam_shard unavailable — falling back to sequential")
+        return _filter_sequential(
+            bam_path, output_path, keep_set, tag_name=tag_name, threads=threads
+        )
+
     # Cap shard count generously — the scan stops once we hit the cap
     # OR run out of reads, whichever comes first. shard_size controls
     # the target reads-per-shard directly; no file-size estimation
     # (which mis-predicted by 30× on highly-compressed inputs).
     max_shards = max(2, threads * 4)
-    boundaries, total_reads = _scan_shard_boundaries_with_count(
+    boundaries, total_reads = _bam_shard.scan_with_count(
         bam_path, n_shards=max_shards, target_reads_per_shard=shard_size
     )
     log.info(
@@ -291,9 +263,18 @@ def _filter_parallel(
     with tempfile.TemporaryDirectory(prefix="ont_filter_") as tmp:
         tmp_path = Path(tmp)
         shard_args: list[tuple[str, str, frozenset[str], str, int, int | None]] = []
-        for i, (start, end) in enumerate(boundaries):
+        for i, boundary in enumerate(boundaries):
             shard_out = tmp_path / f"shard_{i:04d}.bam"
-            shard_args.append((str(bam_path), str(shard_out), keep_frozen, tag_name, start, end))
+            shard_args.append(
+                (
+                    str(bam_path),
+                    str(shard_out),
+                    keep_frozen,
+                    tag_name,
+                    boundary.start_voff,
+                    boundary.end_voff,
+                )
+            )
 
         try:
             with ProcessPoolExecutor(max_workers=threads) as pool:

@@ -46,7 +46,7 @@ def test_atlas_cli_emits_json_on_empty_store(
 ) -> None:
     """Empty store + no peers — still emits a well-formed JSON."""
     # Force atlas to degrade: no qc_baseline, no external peers
-    monkeypatch.setattr(atlas_mod, "_import_qc_baseline", lambda: None)
+    monkeypatch.setattr(atlas_mod, "import_lab_module", lambda *a, **kw: None)
     monkeypatch.setattr(
         atlas_mod, "DEFAULT_EXTERNAL_PEERS_DIR", tmp_path / "no_peers"
     )
@@ -77,7 +77,7 @@ def test_atlas_cli_emits_json_on_empty_store(
 
 def test_atlas_cli_custom_strata(tmp_path: Path, monkeypatch) -> None:
     """--strata controls the strata_keys field in the JSON output."""
-    monkeypatch.setattr(atlas_mod, "_import_qc_baseline", lambda: None)
+    monkeypatch.setattr(atlas_mod, "import_lab_module", lambda *a, **kw: None)
     monkeypatch.setattr(
         atlas_mod, "DEFAULT_EXTERNAL_PEERS_DIR", tmp_path / "no_peers"
     )
@@ -105,7 +105,7 @@ def test_atlas_cli_z_threshold_passes_through(
     tmp_path: Path, monkeypatch, capsys
 ) -> None:
     """--z-threshold accepts a float and runs without error on degraded input."""
-    monkeypatch.setattr(atlas_mod, "_import_qc_baseline", lambda: None)
+    monkeypatch.setattr(atlas_mod, "import_lab_module", lambda *a, **kw: None)
     monkeypatch.setattr(
         atlas_mod, "DEFAULT_EXTERNAL_PEERS_DIR", tmp_path / "no_peers"
     )

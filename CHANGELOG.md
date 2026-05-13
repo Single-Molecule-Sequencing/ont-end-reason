@@ -4,6 +4,66 @@ All notable changes to ont-end-reason are documented here. Format adheres to
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 [PEP 440](https://peps.python.org/pep-0440/).
 
+## [0.2.0] — 2026-05-12
+
+### Added — atlas + Tier-2 dogfood
+
+- `analyze.atlas` — cross-run end-reason atlas. Aggregates QC results
+  across the lab's `~/.ont-qc-baselines/` store + external peer Parquet
+  fingerprints, stratifies by `(flowcell_type × chemistry × adaptive_sampling)`,
+  flags outliers by composite z-score. Powers Fig 8 of end-reason-paper.
+- `analyze atlas` CLI subcommand: `ont-end-reason analyze atlas --json ...`
+- `figures.atlas` regenerator + `viz.plot_atlas_summary` figure helper.
+- Parallel sharded BAM filter via `bam_shard` (ont-ecosystem `lib/`).
+  `threads >= 2` engages a ProcessPoolExecutor that O(1)-seeks shards
+  directly rather than the prior O(N²/2) linear-skip; under
+  `MIN_READS_FOR_PARALLEL` falls back to sequential automatically.
+- `_lab_bridge.import_lab_module` shim that bootstraps lab-papers'
+  canonical `cross_repo_import` helper. Replaces inline sys.path dances
+  in `filter/filter.py` and `analyze/atlas.py`.
+- Release CI: advisory `preflight-channels` job runs lab-papers'
+  `check_channels.py` to verify every runtime dep resolves on bioconda
+  (+ conda-forge fallback) before publish.
+
+### Changed
+
+- `filter/filter.py` — dogfoods canonical `lib.bam_shard` from
+  ont-ecosystem. Deleted inline `_scan_shard_boundaries{,_with_count}`
+  helpers (~50 LOC) in favour of `bam_shard.scan_with_count` +
+  `ShardBoundary` dataclass.
+- `analyze/atlas.py` — dogfoods canonical `cross_repo_import` from
+  lab-papers via `_lab_bridge`. Deleted inline `_import_qc_baseline()`
+  helper. Same graceful-degradation semantics; smaller surface.
+- Coverage gate ratcheted from 70% → 72% (still locked-in below
+  per-PR coverage of 74%).
+- Distribution: PyPI shipping continues; conda submission moved
+  from conda-forge to bioconda after diagnosing channel-purity
+  mismatch (conda-forge blocks bioconda-only `pod5`/`pysam`).
+- CI workflows: `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"` on all
+  jobs to opt past the Node 20 deprecation warning on Ubuntu 24.04
+  runners.
+
+### Fixed
+
+- `figures/{fig3,fig5,fig6}.py`: missing `plt.close(fig)` after
+  `savefig()` was leaking the pyplot registry; downstream tests in
+  parallel runs occasionally inherited a polluted active figure.
+- Stratum key with `False` for `adaptive_sampling` was being coerced
+  to `"unknown"` via `False or "unknown"`; now explicit `is None` check.
+- NaN handling in `_load_external_peers`: pandas fills missing
+  columns with NaN, so any row whose `signal_positive_pct` is NaN is
+  now excluded explicitly (was crashing the z-score path).
+- `--shard-size` CLI option was wired through the Python kwarg but
+  not exposed as a click option; surfaced during AWG074 real-data
+  validation. Added explicit `@click.option` + `TestFilterCLISurface`
+  regression class.
+
+### Bioconda
+
+- PR #65343 submitted (all 5 CI checks green); awaiting human review.
+- `pip install ont-end-reason` from PyPI works today; bioconda flow
+  ships once the recipe is merged.
+
 ## [0.2.0a1] — 2026-05-12
 
 ### Added — full implementations of every scaffolded v0.1.0 analysis

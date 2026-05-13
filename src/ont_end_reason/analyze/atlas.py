@@ -14,22 +14,25 @@ and combined into per-stratum baseline statistics. Runs whose composite
 anomaly_score (max |z_i| across end_reason metrics) exceeds a threshold are
 flagged.
 
-The library imports `lib.qc_baseline` from the ont-ecosystem repo via a
-sys.path shim. If ont-ecosystem isn't checked out, `atlas()` degrades to
-external-peers-only with a clear interpretation message — never crashes.
+The library imports `lib.qc_baseline` from the ont-ecosystem repo via the
+shared `_lab_bridge.import_lab_module` helper (which in turn bridges to
+lab-papers' canonical `cross_repo_import.import_lab_module`). If
+ont-ecosystem isn't checked out, `atlas()` degrades to external-peers-only
+with a clear interpretation message — never crashes.
 
 Spec: docs/superpowers/specs/2026-05-12-end-reason-atlas-design.md
 """
 
 from __future__ import annotations
 
-import sys
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 import structlog
+
+from .._lab_bridge import import_lab_module
 
 log = structlog.get_logger(__name__)
 
@@ -108,31 +111,6 @@ class AtlasResult:
             "interpretation": self.interpretation,
             "generated_at": self.generated_at,
         }
-
-
-def _import_qc_baseline():
-    """Best-effort import of ont-ecosystem's lib.qc_baseline.
-
-    Returns the module object, or None if ont-ecosystem isn't on sys.path.
-    Callers must handle None gracefully — atlas() does this by degrading to
-    external-only mode.
-    """
-    try:
-        import qc_baseline  # type: ignore[import-not-found]
-
-        return qc_baseline
-    except ImportError:
-        pass
-    candidate = Path.home() / "repos" / "ont-ecosystem"
-    if candidate.is_dir():
-        sys.path.insert(0, str(candidate / "lib"))
-        try:
-            import qc_baseline  # type: ignore[import-not-found]
-
-            return qc_baseline
-        except ImportError:
-            sys.path.pop(0)
-    return None
 
 
 def _load_external_peers(peers_dir: Path) -> list[dict[str, Any]]:
@@ -238,7 +216,11 @@ def atlas(
     internal_records: list[dict[str, Any]] = []
     internal_outliers: list[OutlierRecord] = []
     per_stratum: list[StratumStats] = []
-    qc = _import_qc_baseline() if include_internal else None
+    qc = (
+        import_lab_module("qc_baseline", repo="ont-ecosystem", lib_subdir="lib")
+        if include_internal
+        else None
+    )
     if qc is not None:
         try:
             for r in qc.get_end_reason_results():

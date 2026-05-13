@@ -25,7 +25,6 @@ from ont_end_reason.analyze.atlas import (  # noqa: E402
     DEFAULT_STRATA,
     END_REASON_METRIC_KEYS,
     AtlasResult,
-    _import_qc_baseline,
     _load_external_peers,
     _stratum_key_from_record,
     _summarize_metrics,
@@ -126,7 +125,7 @@ def test_load_external_peers_skips_rows_without_sp(tmp_path: Path) -> None:
 
 def test_atlas_empty_returns_valid_result(tmp_path: Path, monkeypatch) -> None:
     """No internal store, no external peers — should return a non-crashing degraded AtlasResult."""
-    monkeypatch.setattr(atlas_mod, "_import_qc_baseline", lambda: None)
+    monkeypatch.setattr(atlas_mod, "import_lab_module", lambda *a, **kw: None)
     result = atlas(external_peers_dir=tmp_path / "no_peers")
     assert isinstance(result, AtlasResult)
     assert result.n_internal == 0
@@ -158,7 +157,7 @@ def test_atlas_external_only(tmp_path: Path, monkeypatch) -> None:
         )
     _make_peer_parquet(peers_dir / "giab.parquet", rows)
 
-    monkeypatch.setattr(atlas_mod, "_import_qc_baseline", lambda: None)
+    monkeypatch.setattr(atlas_mod, "import_lab_module", lambda *a, **kw: None)
     result = atlas(external_peers_dir=peers_dir)
     assert result.n_internal == 0
     assert result.n_external == 5
@@ -221,7 +220,7 @@ def test_atlas_combines_internal_and_external(tmp_path: Path, monkeypatch) -> No
         def compute_atlas_outliers(strata, z_threshold=2.0, min_stratum_size=3):
             return []
 
-    monkeypatch.setattr(atlas_mod, "_import_qc_baseline", lambda: FakeQCBaseline)
+    monkeypatch.setattr(atlas_mod, "import_lab_module", lambda *a, **kw: FakeQCBaseline)
 
     peers_dir = tmp_path / "ext"
     peers_dir.mkdir()
@@ -258,7 +257,7 @@ def test_atlas_to_dict_is_json_safe(monkeypatch, tmp_path: Path) -> None:
     """to_dict() must emit a payload that json.dumps round-trips."""
     import json
 
-    monkeypatch.setattr(atlas_mod, "_import_qc_baseline", lambda: None)
+    monkeypatch.setattr(atlas_mod, "import_lab_module", lambda *a, **kw: None)
     result = atlas(external_peers_dir=tmp_path / "missing")
     text = json.dumps(result.to_dict())
     parsed = json.loads(text)
@@ -280,14 +279,15 @@ def test_atlas_default_strata_constant() -> None:
     }
 
 
-def test_import_qc_baseline_returns_none_when_missing(monkeypatch) -> None:
-    """The shim must return None (not raise) when ont-ecosystem is unavailable."""
+def test_lab_bridge_import_lab_module_returns_none_when_missing(monkeypatch) -> None:
+    """The bridge must return None (not raise) when sister repo is unavailable."""
     monkeypatch.setattr("pathlib.Path.is_dir", lambda self: False)
-    # Make sure direct import also fails
     import sys as _sys
 
     _sys.modules.pop("qc_baseline", None)
-    result = _import_qc_baseline()
+    from ont_end_reason._lab_bridge import import_lab_module
+
+    result = import_lab_module("qc_baseline", repo="ont-ecosystem", lib_subdir="lib")
     # On a real dev machine qc_baseline IS importable; we just assert
-    # the function returns either the module or None, never raises.
+    # the bridge returns either the module or None, never raises.
     assert result is None or hasattr(result, "get_end_reason_results")
