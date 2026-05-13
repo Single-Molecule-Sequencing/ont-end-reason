@@ -56,8 +56,8 @@ import re
 import sys
 import urllib.error
 import urllib.request
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 # Map PyPI canonical → bioconda canonical when they differ (most match
 # 1:1; this dict handles the exceptions documented in
