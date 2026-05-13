@@ -188,15 +188,31 @@ def analyze() -> None:
 @click.option("--max-reads", default=10_000, type=int, show_default=True)
 @click.option("--json", "json_out", type=click.Path(), default=None)
 @click.option("--plot", "plot_out", type=click.Path(), default=None)
+@click.option(
+    "--baseline-store/--no-baseline-store",
+    "baseline_store",
+    default=True,
+    show_default=True,
+    help=(
+        "Auto-populate ~/.ont-qc-baselines when SOURCE matches a registry "
+        "experiment. Silent no-op when SOURCE is unknown to the registry."
+    ),
+)
 def analyze_distribution(
     source: str,
     quick: bool,
     max_reads: int,
     json_out: str | None,
     plot_out: str | None,
+    baseline_store: bool,
 ) -> None:
     """End-reason distribution + OK/CHECK/FAIL quality gate."""
-    from .analyze.distribution import distribution as do_distribution
+    from .analyze.distribution import (
+        distribution as do_distribution,
+    )
+    from .analyze.distribution import (
+        maybe_store_baseline,
+    )
 
     try:
         result = do_distribution(source, quick=quick, max_reads=max_reads)
@@ -222,6 +238,11 @@ def analyze_distribution(
         Path(plot_out).parent.mkdir(parents=True, exist_ok=True)
         fig.savefig(plot_out, dpi=300, bbox_inches="tight")
         click.echo(f"Plot: {plot_out}")
+
+    # Atlas auto-population: silent when source isn't a registry-known path.
+    stored_id = maybe_store_baseline(result, source, write=baseline_store)
+    if stored_id:
+        click.echo(f"Baseline stored: {stored_id}")
 
 
 # Scaffolded analyses — each calls its NotImplementedError counterpart and
@@ -630,6 +651,24 @@ def figure_supplementary(source: str, out: str) -> None:
         sys.exit(2)
 
 
+@figure.command("atlas")
+@click.option("--out", required=True, type=click.Path())
+def figure_atlas(out: str) -> None:
+    """Paper Figure 8 — cross-run end-reason atlas summary.
+
+    Composes `analyze.atlas` (cross-run aggregation across qc_baseline +
+    external peers) and `viz.static.plot_atlas_summary`. Works on an empty
+    store — renders a friendly placeholder, never crashes.
+    """
+    from .figures.atlas import atlas as fig_atlas
+
+    try:
+        path = fig_atlas(out=out)
+    except OntEndReasonError as exc:
+        _die(str(exc))
+    click.echo(f"Atlas figure written: {path}")
+
+
 # ───────────────────────── report (group) ─────────────────────────
 
 
@@ -738,6 +777,96 @@ def stats(summary: str, out: str | None, json_out: str | None) -> None:
     if json_out:
         Path(json_out).write_text(json.dumps(result.to_dict(), indent=2))
         click.echo(f"Wrote {json_out}")
+
+
+@analyze.command("atlas")
+@click.option("--json", "json_out", type=click.Path(), default=None)
+@click.option("--plot", "plot_out", type=click.Path(), default=None)
+@click.option(
+    "--include-internal/--no-include-internal",
+    default=True,
+    show_default=True,
+    help="Pull internal-lab peers from ~/.ont-qc-baselines.",
+)
+@click.option(
+    "--include-external/--no-include-external",
+    default=True,
+    show_default=True,
+    help="Pull external (public ONT) peers from the fingerprint cache.",
+)
+@click.option(
+    "--strata",
+    default="flowcell_type,chemistry,adaptive_sampling",
+    show_default=True,
+    help="Comma-separated metadata fields to stratify peer cohorts by.",
+)
+@click.option(
+    "--z-threshold",
+    default=2.0,
+    type=float,
+    show_default=True,
+    help="Composite anomaly score >= this flags an outlier.",
+)
+def analyze_atlas(
+    json_out: str | None,
+    plot_out: str | None,
+    include_internal: bool,
+    include_external: bool,
+    strata: str,
+    z_threshold: float,
+) -> None:
+    """Cross-run end-reason atlas — aggregate peers, flag outliers.
+
+    Reads from the qc_baseline store (internal lab cohort) and the external
+    peer fingerprint cache (public ONT datasets), stratifies by metadata
+    fields, computes per-stratum baselines, and flags runs whose composite
+    anomaly score exceeds --z-threshold. Empty stores degrade gracefully.
+    """
+    from .analyze.atlas import atlas
+
+    strata_tuple = tuple(s.strip() for s in strata.split(",") if s.strip())
+    result = atlas(
+        include_internal=include_internal,
+        include_external=include_external,
+        strata=strata_tuple,
+        z_threshold=z_threshold,
+    )
+
+    click.echo(
+        f"Atlas: {result.n_internal} internal + {result.n_external} external "
+        f"runs across {len(result.per_stratum)} strata"
+    )
+    if result.outliers:
+        click.echo("Outliers flagged (top 5 by anomaly_score):")
+        for o in result.outliers[:5]:
+            click.echo(
+                f"  [{o.source:<8}] {o.experiment_id:<40} "
+                f"stratum={o.stratum}  score={o.anomaly_score:.2f}"
+            )
+    else:
+        click.echo("No outliers flagged.")
+
+    if result.interpretation:
+        click.echo(f"\n  {result.interpretation}")
+
+    if json_out:
+        Path(json_out).parent.mkdir(parents=True, exist_ok=True)
+        Path(json_out).write_text(json.dumps(result.to_dict(), indent=2))
+        click.echo(f"\nJSON: {json_out}")
+
+    if plot_out:
+        from .viz.static import plot_atlas_summary
+
+        try:
+            fig = plot_atlas_summary(result)
+        except ImportError:
+            _die("matplotlib not available — install ont-end-reason[viz] to plot")
+        Path(plot_out).parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(plot_out, dpi=200, bbox_inches="tight")
+        import matplotlib.pyplot as plt
+
+        plt.close(fig)
+        click.echo(f"Plot: {plot_out}")
 
 
 if __name__ == "__main__":
