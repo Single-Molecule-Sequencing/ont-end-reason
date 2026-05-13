@@ -21,6 +21,7 @@ paper script. Filling them in is v0.2.0+ work.
 
 from __future__ import annotations
 
+from .atlas import AtlasResult, OutlierRecord, StratumStats, atlas
 from .distribution import DistributionResult, distribution
 from .hypothesis import HypothesisResult, hypothesis
 from .length import LengthResult, length
@@ -32,16 +33,20 @@ from .temporal import TemporalResult, temporal
 from .umc_posterior import UMCPosteriorResult, umc_posterior
 
 __all__ = [
+    "AtlasResult",
     "DistributionResult",
     "HypothesisResult",
     "LengthResult",
+    "OutlierRecord",
     "QualityResult",
     "SignalTraceResult",
     "SmaMetricsResult",
+    "StratumStats",
     "TableResult",
     "TemporalResult",
     "UMCPosteriorResult",
     # full
+    "atlas",
     "distribution",
     "generate_tables",
     "hypothesis",
