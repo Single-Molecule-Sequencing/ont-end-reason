@@ -277,6 +277,43 @@ Larger gains expected on multi-GB real ONT BAMs where per-record CPU cost is hig
 
 ---
 
+## Cross-run atlas
+
+The `analyze atlas` subcommand answers a question single-run analysis can't:
+**"is THIS run normal relative to all the lab's prior runs (and the public ONT
+community)?"**
+
+```bash
+# Aggregate across the qc_baseline store + external peer cache
+ont-end-reason analyze atlas --json atlas.json --plot atlas.png
+
+# Stratify on different metadata dimensions
+ont-end-reason analyze atlas --strata flowcell_type,basecaller_model
+
+# Tighten outlier flagging (default z >= 2.0)
+ont-end-reason analyze atlas --z-threshold 3.0
+```
+
+**Data sources:**
+- **Internal lab peers** — auto-populated into `~/.ont-qc-baselines/` by every
+  `ont-end-reason analyze distribution` invocation (see `--baseline-store`).
+- **External peers** — public ONT datasets (GIAB, hereditary-cancer ONT Open
+  Data) cached as Parquet fingerprints at `~/.ont-qc-baselines/external_peers/`,
+  refreshed by the lab's `/ont-public-data` skill.
+
+**Backfill:** one-time `scripts/atlas_backfill.py --dry-run` lists every
+registry experiment eligible for ingest; drop the `--dry-run` to run them all.
+
+**Output shape:** AtlasResult JSON with `per_stratum` (mean/median/std/min/max
+for all 5 end-reason metrics per stratum), `outliers` (runs with composite
+`anomaly_score = max(|z_i|) >= --z-threshold`), and a human-readable
+`interpretation`. Designed-for: paper figure regenerators, dashboard panels,
+batch QC gates.
+
+Spec: [docs/superpowers/specs/2026-05-12-end-reason-atlas-design.md](docs/superpowers/specs/2026-05-12-end-reason-atlas-design.md)
+
+---
+
 ## Lab infrastructure integration
 
 `ont-end-reason` is part of the Single-Molecule-Sequencing org's analytic toolchain:
