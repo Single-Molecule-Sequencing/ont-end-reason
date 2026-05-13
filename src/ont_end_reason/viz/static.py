@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from ..analyze.atlas import END_REASON_METRIC_KEYS, AtlasResult
 from ..analyze.distribution import DistributionResult
 from ..analyze.length import LengthResult
 from ..analyze.temporal import TemporalResult
@@ -17,6 +18,23 @@ from ..codes import CODES
 
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
+
+
+# Short codes + colors for atlas summary's end-reason metric set
+_ATLAS_METRIC_LABELS = {
+    "signal_positive_pct": "SP",
+    "unblock_mux_pct": "UMC",
+    "data_service_pct": "DUMC",
+    "mux_change_pct": "MC",
+    "signal_negative_pct": "SN",
+}
+_ATLAS_METRIC_COLORS = {
+    "signal_positive_pct": "#2ca02c",  # green
+    "unblock_mux_pct": "#ff7f0e",  # orange
+    "data_service_pct": "#d62728",  # red
+    "mux_change_pct": "#1f77b4",  # blue
+    "signal_negative_pct": "#7f7f7f",  # gray
+}
 
 
 # Canonical category ordering (most-kept on left → most-rejected on right)
@@ -298,5 +316,115 @@ def plot_signal_trace(result, *, title: str | None = None):
     ax.set_title(title or f"Signal trace — {result.read_id[:8]}…  end_reason={er_label}")
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
+    fig.tight_layout()
+    return fig
+
+
+def plot_atlas_summary(
+    result: AtlasResult,
+    *,
+    title: str | None = None,
+    min_stratum_size: int = 3,
+) -> Figure:
+    """Fig8-style cross-run end-reason summary — per-stratum stacked bars.
+
+    Each stratum (flowcell × chemistry × adaptive) becomes a position on the
+    x-axis; for each end_reason metric we draw a grouped bar showing the
+    mean percentage with a std error bar. Strata with fewer than
+    `min_stratum_size` runs render with reduced opacity + hash pattern to
+    flag low-confidence aggregates.
+
+    Empty atlas → friendly placeholder figure (1 axis, no data).
+    """
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    fig, ax = plt.subplots(figsize=(11, 5))
+
+    if not result.per_stratum:
+        ax.text(
+            0.5,
+            0.5,
+            "Atlas is empty.\n\n"
+            "Populate the qc_baseline store by running\n"
+            "`ont-end-reason analyze distribution` on lab\n"
+            "experiments, or `scripts/atlas_backfill.py` to\n"
+            "seed from the ONT registry.",
+            ha="center",
+            va="center",
+            transform=ax.transAxes,
+            fontsize=11,
+            color="#444444",
+        )
+        ax.set_axis_off()
+        ax.set_title(title or "Cross-run end-reason atlas (no data)")
+        fig.tight_layout()
+        return fig
+
+    # Order strata by n_runs descending (most-data first).
+    strata = sorted(result.per_stratum, key=lambda s: -s.n_runs)
+    stratum_labels = [" / ".join(s.stratum) if s.stratum else "(unstratified)" for s in strata]
+
+    metrics = [m for m in END_REASON_METRIC_KEYS if m in _ATLAS_METRIC_LABELS]
+    n_metrics = len(metrics)
+    x = np.arange(len(strata))
+    bar_width = 0.8 / n_metrics
+
+    for i, metric in enumerate(metrics):
+        means = []
+        stds = []
+        alphas = []
+        hatches = []
+        for s in strata:
+            stat = s.metric_stats.get(metric, {})
+            means.append(stat.get("mean", 0.0))
+            stds.append(stat.get("std", 0.0))
+            low_conf = s.n_runs < min_stratum_size
+            alphas.append(0.45 if low_conf else 0.9)
+            hatches.append("//" if low_conf else "")
+        offsets = x + (i - n_metrics / 2 + 0.5) * bar_width
+        # Draw each bar individually so per-bar alpha + hatch apply.
+        for xi, mean, std, alpha, hatch in zip(offsets, means, stds, alphas, hatches, strict=True):
+            ax.bar(
+                xi,
+                mean,
+                width=bar_width,
+                color=_ATLAS_METRIC_COLORS[metric],
+                edgecolor="black",
+                linewidth=0.4,
+                alpha=alpha,
+                hatch=hatch,
+                yerr=std,
+                capsize=2,
+                error_kw={"elinewidth": 0.6, "ecolor": "#333333"},
+                label=_ATLAS_METRIC_LABELS[metric] if xi == offsets[0] else None,
+            )
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(
+        [f"{lbl}\n(n={s.n_runs})" for lbl, s in zip(stratum_labels, strata, strict=True)],
+        rotation=30,
+        ha="right",
+        fontsize=8,
+    )
+    ax.set_ylabel("Mean % of reads (± std)")
+    ax.set_xlabel("Stratum")
+    n_strata = len(strata)
+    default_title = (
+        f"Cross-run end-reason atlas — "
+        f"{result.n_internal} internal + {result.n_external} external runs "
+        f"across {n_strata} strata"
+    )
+    ax.set_title(title or default_title)
+    ax.legend(
+        loc="upper right",
+        frameon=False,
+        fontsize=9,
+        ncol=n_metrics,
+        title="end_reason",
+    )
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.set_ylim(bottom=0)
     fig.tight_layout()
     return fig

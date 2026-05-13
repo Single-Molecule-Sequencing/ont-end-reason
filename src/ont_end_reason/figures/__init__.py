@@ -10,9 +10,10 @@ a pointer to the source. Fill-in is v0.2.0+ work tracked in GitHub issues.
 
 from __future__ import annotations
 
+from .atlas import atlas
 from .fig3_distribution import fig3_distribution
 from .fig5_violin import fig5_violin
 from .fig6_conceptual import fig6_conceptual
 from .supplementary import supplementary
 
-__all__ = ["fig3_distribution", "fig5_violin", "fig6_conceptual", "supplementary"]
+__all__ = ["atlas", "fig3_distribution", "fig5_violin", "fig6_conceptual", "supplementary"]
