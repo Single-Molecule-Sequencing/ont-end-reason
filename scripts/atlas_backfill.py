@@ -62,7 +62,9 @@ def main() -> int:
 
     experiments = _load_registry()
     eligible = [e for e in experiments if _is_eligible(e)]
-    print(f"Registry: {len(experiments)} entries; eligible (>= {MIN_GB} GB on disk): {len(eligible)}")
+    print(
+        f"Registry: {len(experiments)} entries; eligible (>= {MIN_GB} GB on disk): {len(eligible)}"
+    )
 
     if args.limit:
         eligible = eligible[: args.limit]
@@ -95,7 +97,7 @@ def main() -> int:
         print(f"\n[{i}/{len(eligible)}] {eid}  ({exp.get('total_size_gb', 0):.1f} GB)")
         try:
             result = do_distribution(loc, quick=args.quick)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             print(f"  FAIL: {type(exc).__name__}: {exc}")
             n_fail += 1
             continue
@@ -110,13 +112,12 @@ def main() -> int:
                 stored = maybe_store_baseline(result, loc, write=True)
                 if stored:
                     n_stored += 1
-                    print(f"  → stored in qc_baseline")
-            except Exception as exc:  # noqa: BLE001
+                    print("  → stored in qc_baseline")
+            except Exception as exc:
                 print(f"  ! baseline store failed: {exc}")
 
     print(
-        f"\nBackfill complete — {n_ok} succeeded, {n_fail} failed, "
-        f"{n_stored} stored in qc_baseline"
+        f"\nBackfill complete — {n_ok} succeeded, {n_fail} failed, {n_stored} stored in qc_baseline"
     )
     return 0 if n_fail == 0 else 1
 
