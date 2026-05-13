@@ -12,9 +12,10 @@ jobs:
   preflight-channels:
     # Tier-2 lab-canonical preflight: verify every runtime dep resolves on
     # bioconda (incl. conda-forge fallback per bioconda channel-policy).
-    # Script lives in lab-papers/scripts/distribute/check_channels.py;
-    # fetched fresh at workflow time so we always pin the canonical
-    # version. Advisory: failures warn but do not block PyPI publish.
+    # The check_channels.py script is vendored from
+    # lab-papers/scripts/distribute/ (private repo — see the file's header
+    # comment for the refresh recipe). Advisory: failures warn but do not
+    # block PyPI publish.
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
@@ -25,15 +26,8 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Fetch canonical check_channels.py from lab-papers
-        run: |
-          mkdir -p .preflight
-          curl -fsSL \
-            https://raw.githubusercontent.com/Single-Molecule-Sequencing/lab-papers/main/scripts/distribute/check_channels.py \
-            -o .preflight/check_channels.py
-
       - name: Probe bioconda (+ conda-forge fallback) for every runtime dep
-        run: python .preflight/check_channels.py --pyproject pyproject.toml --target bioconda --verbose
+        run: python scripts/distribute/check_channels.py --pyproject pyproject.toml --target bioconda --verbose
 
   build:
     needs: preflight-channels
