@@ -14,9 +14,14 @@ ecosystem. It accepts any iterable of `ReadRecord` (typically from
 
 from __future__ import annotations
 
+import contextlib
+import logging
+import sys
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 from ..codes import CODES, NAMES
 from ..errors import AnalysisError
@@ -27,6 +32,11 @@ from ..io.readers import (
     extract_from_pod5,
     extract_from_summary,
 )
+
+logger = logging.getLogger(__name__)
+
+DEFAULT_REGISTRY_PATH = Path.home() / ".ont-registry" / "experiments.yaml"
+ONT_ECOSYSTEM_PATH = Path.home() / "repos" / "ont-ecosystem"
 
 
 @dataclass
@@ -176,3 +186,183 @@ def distribution(
         interpretation=_interpretation(percentages),
         source_format=src_format,
     )
+
+
+# ──────────────────── qc_baseline auto-population (Phase 5) ────────────────────
+
+
+def _resolve_path(p: str | Path) -> Path | None:
+    """Return an absolute, symlink-resolved Path or None if it can't be resolved."""
+    try:
+        return Path(p).expanduser().resolve()
+    except (OSError, RuntimeError):
+        return None
+
+
+def _load_registry_entries(
+    registry_path: Path | None = None,
+) -> list[dict[str, Any]]:
+    """Load the ONT registry experiments list. Returns [] if unavailable."""
+    if registry_path is None:
+        registry_path = DEFAULT_REGISTRY_PATH
+    if not registry_path.exists():
+        return []
+    try:
+        import yaml  # pyyaml is a hard dependency of ont-end-reason
+    except ImportError:  # pragma: no cover — pyyaml is in pyproject deps
+        return []
+    try:
+        data = yaml.safe_load(registry_path.read_text()) or {}
+    except (yaml.YAMLError, OSError) as exc:
+        logger.warning("Could not parse ONT registry at %s: %s", registry_path, exc)
+        return []
+    entries = data.get("experiments") or []
+    if not isinstance(entries, list):
+        return []
+    return entries
+
+
+def _match_registry_entry(
+    source_path: str | Path,
+    entries: Iterable[dict[str, Any]],
+) -> dict[str, Any] | None:
+    """Return the registry entry whose `location` matches source_path, else None.
+
+    Match is on absolute-resolved paths. A registry entry with a parent path
+    that contains the source also counts (the registry stores experiment
+    directories, but `analyze distribution` may be invoked on a file within).
+    """
+    src = _resolve_path(source_path)
+    if src is None:
+        return None
+    for entry in entries:
+        loc = entry.get("location")
+        if not loc:
+            continue
+        loc_path = _resolve_path(loc)
+        if loc_path is None:
+            continue
+        if src == loc_path:
+            return entry
+        # Also accept: source is inside the registered experiment directory
+        try:
+            src.relative_to(loc_path)
+            return entry
+        except ValueError:
+            continue
+    return None
+
+
+def _parse_timestamp(value: Any) -> float:
+    """Parse an ISO-8601 string into a POSIX timestamp; fall back to now()."""
+    if isinstance(value, str):
+        try:
+            dt = datetime.fromisoformat(value)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt.timestamp()
+        except ValueError:
+            pass
+    elif isinstance(value, datetime):
+        dt = value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+        return dt.timestamp()
+    return datetime.now(tz=timezone.utc).timestamp()
+
+
+def maybe_store_baseline(
+    result: DistributionResult,
+    source_path: str | Path,
+    *,
+    write: bool = True,
+    registry_path: Path | None = None,
+) -> str | None:
+    """Auto-store a DistributionResult in the qc_baseline store.
+
+    Looks up `source_path` in the ONT registry (`~/.ont-registry/experiments.yaml`).
+    If a registry entry's `location` matches (or contains) source_path, builds
+    an ExperimentMetadata + QCResult from the entry and stores it via
+    `lib.qc_baseline.store_qc_result`.
+
+    Idempotent: result_id is hashed from experiment_id + timestamp; re-running
+    with the same registry entry's `discovered` timestamp produces the same id
+    and overwrites the same file.
+
+    Behavior:
+      * `write=False` → no-op, returns None (the opt-out path).
+      * `source_path` doesn't match any registry entry → returns None silently.
+      * `lib.qc_baseline` can't be imported → logs a warning, returns None.
+      * Successful store → returns the result_id.
+
+    Never raises; on any unexpected error logs a warning and returns None so
+    that the distribution analysis itself stays uninterrupted.
+    """
+    if not write:
+        return None
+
+    entries = _load_registry_entries(registry_path)
+    if not entries:
+        return None
+
+    entry = _match_registry_entry(source_path, entries)
+    if entry is None:
+        return None
+
+    # Graceful import of the cross-repo qc_baseline module.
+    ont_eco_str = str(ONT_ECOSYSTEM_PATH)
+    inserted = False
+    if ont_eco_str not in sys.path and ONT_ECOSYSTEM_PATH.exists():
+        sys.path.insert(0, ont_eco_str)
+        inserted = True
+    try:
+        from lib.qc_baseline import (  # type: ignore[import-not-found]
+            ExperimentMetadata,
+            QCResult,
+            store_qc_result,
+        )
+    except ImportError as exc:
+        logger.warning(
+            "qc_baseline not available (ont-ecosystem missing at %s): %s; "
+            "skipping baseline store",
+            ONT_ECOSYSTEM_PATH,
+            exc,
+        )
+        if inserted:
+            with contextlib.suppress(ValueError):
+                sys.path.remove(ont_eco_str)
+        return None
+
+    try:
+        metadata = ExperimentMetadata(
+            experiment_id=str(entry.get("id") or entry.get("name") or "unknown"),
+            flowcell_type=entry.get("flowcell_type") or entry.get("flowcell"),
+            chemistry=entry.get("chemistry"),
+            sample_type=entry.get("sample_type"),
+            run_duration_hours=entry.get("run_duration_hours"),
+            basecaller_model=entry.get("basecaller_model"),
+            adaptive_sampling=bool(entry.get("adaptive_sampling", False)),
+            notes=entry.get("notes", "") or "",
+        )
+
+        metrics: dict[str, float] = {
+            "signal_positive_pct": float(result.signal_positive_pct),
+            "unblock_mux_pct": float(result.unblock_mux_pct),
+            "data_service_pct": float(result.data_service_pct),
+            "mux_change_pct": float(
+                result.percentages.get("mux_change", 0.0) * 100.0
+            ),
+            "signal_negative_pct": float(
+                result.percentages.get("signal_negative", 0.0) * 100.0
+            ),
+        }
+
+        ts = _parse_timestamp(entry.get("discovered"))
+
+        qc_result = QCResult(
+            metadata=metadata,
+            metrics=metrics,
+            timestamp=ts,
+        )
+        return store_qc_result(qc_result)
+    except Exception as exc:  # pragma: no cover — defensive guard
+        logger.warning("Failed to store qc_baseline result: %s", exc)
+        return None
