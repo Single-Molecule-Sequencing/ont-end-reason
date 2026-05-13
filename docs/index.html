@@ -335,32 +335,57 @@ Posterior bonus total:       2,965,111 bp</code></pre>
 </section>
 
 <section id="atlas">
-  <h2>Cross-run atlas</h2>
-  <p>
+  <h2>🗺️ Cross-run atlas</h2>
+  <p class="lead">
     The <code>analyze atlas</code> subcommand answers a question a single-run
     analysis can&rsquo;t: <em>&ldquo;is THIS run normal relative to all the
-    lab&rsquo;s prior runs and the public ONT community?&rdquo;</em> It
-    aggregates per-run end-reason distributions from two sources and flags
-    statistical outliers.
+    lab&rsquo;s prior runs and the public ONT community?&rdquo;</em>
   </p>
 
-  <h3>Data sources</h3>
-  <ul>
-    <li>
-      <strong>Internal lab peers</strong> &mdash; auto-populated into
-      <code>~/.ont-qc-baselines/</code> by every
-      <code>ont-end-reason analyze distribution</code> invocation
-      (<code>--baseline-store</code>, default on). One-time backfill from the
-      ONT registry via <code>scripts/atlas_backfill.py</code>.
-    </li>
-    <li>
-      <strong>External peers</strong> &mdash; public ONT datasets (GIAB,
-      hereditary-cancer ONT Open Data) cached as Parquet fingerprints,
-      refreshed by the lab&rsquo;s <code>/ont-public-data</code> skill.
-    </li>
-  </ul>
+  <figure style="margin: 1.5rem 0;">
+    <img src="examples/charts/atlas.png"
+         alt="Example atlas output: per-stratum end-reason fractions across 12 internal + 4 external runs"
+         style="width: 100%; max-width: 1100px; border: 1px solid var(--muted-border-color, #ccc); border-radius: 8px; padding: 8px; background: #fff;" />
+    <figcaption style="font-size: 0.9em; color: var(--muted-color, #666); margin-top: 0.5rem;">
+      <strong>Figure:</strong> Per-stratum end-reason distribution (synthetic example with
+      12 internal + 4 external runs across 3 flowcell&times;chemistry strata).
+      Each bar is mean&nbsp;%&nbsp;&plusmn;&nbsp;std across the cohort.
+      The lower SP% / higher UMC% in <em>FLO-PRO114M / R10.4.1 / adaptive=True</em>
+      is the canonical adaptive-sampling signature the paper documents.
+    </figcaption>
+  </figure>
 
-  <h3>Usage</h3>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 1.5rem 0;">
+    <div>
+      <h3>📥 Data sources</h3>
+      <ul>
+        <li>
+          <strong>Internal lab peers</strong> &mdash; auto-populated into
+          <code>~/.ont-qc-baselines/</code> by every
+          <code>ont-end-reason analyze distribution</code> invocation
+          (<code>--baseline-store</code>, default on).
+          One-time backfill via <code>scripts/atlas_backfill.py</code>.
+        </li>
+        <li>
+          <strong>External peers</strong> &mdash; public ONT datasets (GIAB,
+          hereditary-cancer ONT Open Data) cached as Parquet fingerprints,
+          refreshed by the lab&rsquo;s <code>/ont-public-data</code> skill.
+        </li>
+      </ul>
+    </div>
+    <div>
+      <h3>📤 Output</h3>
+      <p>
+        Returns an <code>AtlasResult</code> JSON with <code>per_stratum</code>
+        statistics, <code>outliers</code> (composite anomaly score = max
+        |z<sub>i</sub>|), and a human-readable <code>interpretation</code>.
+        Empty store degrades gracefully &mdash; never crashes.
+        Designed-for: paper figure regenerators, dashboard panels, batch QC gates.
+      </p>
+    </div>
+  </div>
+
+  <h3>🚀 Usage</h3>
   <pre><code># Aggregate across both internal + external peers
 ont-end-reason analyze atlas --json atlas.json --plot atlas.png
 
@@ -368,25 +393,38 @@ ont-end-reason analyze atlas --json atlas.json --plot atlas.png
 ont-end-reason analyze atlas --strata flowcell_type,basecaller_model
 
 # Tighten outlier flagging (default z &gt;= 2.0)
-ont-end-reason analyze atlas --z-threshold 3.0</code></pre>
+ont-end-reason analyze atlas --z-threshold 3.0
 
-  <h3>Output</h3>
-  <p>
-    Returns an <code>AtlasResult</code> JSON with <code>per_stratum</code>
-    statistics (mean / median / std / min / max for all 5 end-reason metrics),
-    <code>outliers</code> (composite anomaly score = max
-    |z<sub>i</sub>|), and a human-readable <code>interpretation</code> field.
-    Empty store + no peers degrades gracefully to a clear interpretation
-    message &mdash; never crashes.
-  </p>
+# Reproduce paper fig8 directly
+ont-end-reason figure atlas --out fig8.png</code></pre>
 
-  <p>
-    <strong>Spec:</strong>
-    <a href="https://github.com/Single-Molecule-Sequencing/ont-end-reason/blob/main/docs/superpowers/specs/2026-05-12-end-reason-atlas-design.md">2026-05-12 atlas design</a>
-    &middot; <strong>Reference figure:</strong>
-    <code>ont-end-reason figure atlas</code> reproduces the
-    end-reason-paper <code>fig8_public_validation_summary</code> view.
-  </p>
+  <h3>🔗 Atlas artifacts</h3>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0.8rem; margin: 1rem 0;">
+    <a href="https://github.com/Single-Molecule-Sequencing/ont-end-reason/blob/main/docs/superpowers/specs/2026-05-12-end-reason-atlas-design.md"
+       style="display: block; padding: 0.8rem 1rem; border: 1px solid var(--muted-border-color, #ccc); border-radius: 8px; text-decoration: none;">
+      📜 <strong>Design spec</strong> &mdash; full architecture
+    </a>
+    <a href="https://github.com/Single-Molecule-Sequencing/ont-end-reason/blob/main/src/ont_end_reason/analyze/atlas.py"
+       style="display: block; padding: 0.8rem 1rem; border: 1px solid var(--muted-border-color, #ccc); border-radius: 8px; text-decoration: none;">
+      🐍 <strong>analyze/atlas.py</strong> &mdash; library
+    </a>
+    <a href="https://github.com/Single-Molecule-Sequencing/ont-end-reason/blob/main/src/ont_end_reason/figures/atlas.py"
+       style="display: block; padding: 0.8rem 1rem; border: 1px solid var(--muted-border-color, #ccc); border-radius: 8px; text-decoration: none;">
+      🎨 <strong>figures/atlas.py</strong> &mdash; figure regenerator
+    </a>
+    <a href="https://github.com/Single-Molecule-Sequencing/ont-end-reason/blob/main/scripts/atlas_backfill.py"
+       style="display: block; padding: 0.8rem 1rem; border: 1px solid var(--muted-border-color, #ccc); border-radius: 8px; text-decoration: none;">
+      🔄 <strong>atlas_backfill.py</strong> &mdash; registry seed
+    </a>
+    <a href="https://github.com/Single-Molecule-Sequencing/end-reason-paper/blob/main/atoms/figures/fig8_public_validation_summary.fig.yaml"
+       style="display: block; padding: 0.8rem 1rem; border: 1px solid var(--muted-border-color, #ccc); border-radius: 8px; text-decoration: none;">
+      📓 <strong>fig8 atom</strong> &mdash; paper integration
+    </a>
+    <a href="https://github.com/Single-Molecule-Sequencing/ont-end-reason/blob/main/lib/qc_baseline_atlas_helpers"
+       style="display: block; padding: 0.8rem 1rem; border: 1px solid var(--muted-border-color, #ccc); border-radius: 8px; text-decoration: none;">
+      🗄️ <strong>qc_baseline ext</strong> &mdash; storage layer
+    </a>
+  </div>
 </section>
 
 <section id="integration">
