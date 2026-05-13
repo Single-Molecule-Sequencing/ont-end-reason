@@ -150,3 +150,88 @@ class TestErrorHandling:
         result = runner.invoke(main, ["discover", "/does/not/exist"])
         # click validates exists=True before our code runs, so exit_code is 2
         assert result.exit_code != 0
+
+
+class TestCanonicalCliSurfaceContract:
+    """Exercises every public click subcommand through the lab-canonical
+    `assert_flag_exposed` / `assert_subcommand_help_ok` helpers, vendored
+    from `lab-papers/scripts/utils/test_cli_surface.py` into
+    `tests/_lab_helpers/cli_surface.py` (see that file's header for the
+    refresh recipe).
+
+    Catches the CLI-vs-API drift bug class documented in
+    `feedback_cli_vs_api_drift.md` — adding a new Python kwarg without
+    a matching @click.option silently strands the kwarg at the CLI layer.
+    Each row below is one Python kwarg → click option contract.
+    """
+
+    def test_top_level_help_ok(self, runner: CliRunner) -> None:
+        from tests._lab_helpers.cli_surface import assert_subcommand_help_ok
+
+        assert_subcommand_help_ok(runner, main, [])
+
+    def test_every_subcommand_help_ok(self, runner: CliRunner) -> None:
+        from tests._lab_helpers.cli_surface import assert_subcommand_help_ok
+
+        for sub in (
+            ["discover"],
+            ["tag"],
+            ["filter"],
+            ["export-fastq"],
+            ["codes"],
+            ["schema"],
+            ["stats"],
+            ["analyze"],
+            ["analyze", "distribution"],
+            ["analyze", "length"],
+            ["analyze", "quality"],
+            ["analyze", "temporal"],
+            ["analyze", "hypothesis"],
+            ["analyze", "umc-posterior"],
+            ["analyze", "signal-trace"],
+            ["analyze", "sma-metrics"],
+            ["analyze", "tables"],
+            ["analyze", "atlas"],
+        ):
+            assert_subcommand_help_ok(runner, main, sub)
+
+    def test_filter_exposes_parallel_flags(self, runner: CliRunner) -> None:
+        """Regression for the AWG074 incident: --shard-size was a Python
+        kwarg on filter_bam() but the click decorator didn't expose it."""
+        from tests._lab_helpers.cli_surface import assert_flag_exposed
+
+        assert_flag_exposed(runner, main, ["filter"], "--shard-size")
+        assert_flag_exposed(runner, main, ["filter"], "--threads")
+        assert_flag_exposed(runner, main, ["filter"], "--keep")
+        assert_flag_exposed(runner, main, ["filter"], "--tag-name")
+
+    def test_tag_exposes_summary_and_out_flags(self, runner: CliRunner) -> None:
+        from tests._lab_helpers.cli_surface import assert_flag_exposed
+
+        assert_flag_exposed(runner, main, ["tag"], "--summary")
+        assert_flag_exposed(runner, main, ["tag"], "--bam")
+        assert_flag_exposed(runner, main, ["tag"], "--out")
+        assert_flag_exposed(runner, main, ["tag"], "--tag-name")
+
+    def test_export_fastq_exposes_compress(self, runner: CliRunner) -> None:
+        from tests._lab_helpers.cli_surface import assert_flag_exposed
+
+        assert_flag_exposed(runner, main, ["export-fastq"], "--bam")
+        assert_flag_exposed(runner, main, ["export-fastq"], "--fastq")
+        assert_flag_exposed(runner, main, ["export-fastq"], "--compress")
+
+    def test_analyze_distribution_exposes_quick_and_max_reads(
+        self, runner: CliRunner
+    ) -> None:
+        from tests._lab_helpers.cli_surface import assert_flag_exposed
+
+        assert_flag_exposed(runner, main, ["analyze", "distribution"], "--quick")
+        assert_flag_exposed(runner, main, ["analyze", "distribution"], "--max-reads")
+
+    def test_global_logging_flags_exposed(self, runner: CliRunner) -> None:
+        """--debug / --quiet / --version are on the top-level group."""
+        from tests._lab_helpers.cli_surface import assert_flag_exposed
+
+        assert_flag_exposed(runner, main, [], "--debug")
+        assert_flag_exposed(runner, main, [], "--quiet")
+        assert_flag_exposed(runner, main, [], "--version")
