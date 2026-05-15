@@ -28,7 +28,6 @@ classifiers = [
 ]
 dependencies = [
     "click>=8.1",
-    "pysam>=0.22",
     "pod5>=0.3",
     "numpy>=1.24",
     "pandas>=2.0",
@@ -41,6 +40,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# pysam has no Windows wheel; keep it optional so `pip install -e .` works on
+# Windows. Install `.[filter]` on Linux/macOS (or in the lab `ont-bio` conda
+# env) to enable the `tag`, `filter`, and `export-fastq` subcommands. The
+# discover / analyze / viz / summary / report subcommands work without it.
+filter = [
+    "pysam>=0.22; platform_system != 'Windows'",
+]
 interactive = [
     "plotly>=5.18",
     "kaleido>=0.2",

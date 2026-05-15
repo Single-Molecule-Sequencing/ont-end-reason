@@ -132,10 +132,9 @@ def _filter_sequential(
     tag_name: str,
     threads: int,
 ) -> FilterResult:
-    try:
-        import pysam  # type: ignore[import-untyped]
-    except ImportError as exc:
-        raise OntIOError("filter_bam requires pysam") from exc
+    from ._pysam_guard import require_pysam
+
+    pysam = require_pysam()
 
     n_input = 0
     n_kept = 0
@@ -224,10 +223,9 @@ def _filter_parallel(
     threads: int,
     shard_size: int,
 ) -> FilterResult:
-    try:
-        import pysam  # type: ignore[import-untyped]
-    except ImportError as exc:
-        raise OntIOError("filter_bam requires pysam") from exc
+    from ._pysam_guard import require_pysam
+
+    pysam = require_pysam()
 
     if _bam_shard is None:
         log.info("lib.bam_shard unavailable — falling back to sequential")

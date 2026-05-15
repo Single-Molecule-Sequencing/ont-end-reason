@@ -91,10 +91,9 @@ def tag_bam(
     OntIOError
         On any I/O failure (BAM not found, summary unreadable, etc.).
     """
-    try:
-        import pysam  # type: ignore[import-untyped]
-    except ImportError as exc:
-        raise OntIOError("tag_bam requires pysam") from exc
+    from ._pysam_guard import require_pysam
+
+    pysam = require_pysam()
 
     if len(tag_name) != 2:
         raise ValueError(f"tag_name must be 2 chars, got {tag_name!r}")

@@ -44,10 +44,9 @@ def export_fastq(
     compress : bool
         Wrap the output writer in gzip. Default False.
     """
-    try:
-        import pysam  # type: ignore[import-untyped]
-    except ImportError as exc:
-        raise OntIOError("export_fastq requires pysam") from exc
+    from ._pysam_guard import require_pysam
+
+    pysam = require_pysam()
 
     bam_path = Path(bam_path)
     fastq_path = Path(fastq_path)
