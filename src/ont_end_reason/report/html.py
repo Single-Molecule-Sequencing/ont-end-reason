@@ -296,7 +296,7 @@ def build_html_report(
 
     out_path = Path(output_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(html)
+    out_path.write_text(html, encoding="utf-8")
 
     return HtmlReport(
         output_path=str(out_path),
