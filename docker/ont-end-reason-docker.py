@@ -50,24 +50,51 @@ def build_image() -> None:
     )
 
 
+_PATHLIKE_PREFIXES = ("./", ".\\", "../", "..\\", "/", "\\")
+
+
+def _looks_like_path(tok: str) -> bool:
+    """Heuristic: is this argv token a filesystem path the user typed?
+
+    Subcommand names (`filter`, `tag`) and flags (`--bam`, `-h`) must NOT be
+    rewritten even if a same-named file/dir happens to live in cwd. We only
+    rewrite tokens with explicit path syntax: a separator, a leading dot-slash,
+    a drive letter, or an absolute root.
+    """
+    if not tok or tok.startswith("-"):
+        return False
+    if tok.startswith(_PATHLIKE_PREFIXES):
+        return True
+    if "/" in tok or "\\" in tok:
+        return True
+    # Windows drive letter: C:..., D:\..., etc.
+    if len(tok) >= 2 and tok[1] == ":" and tok[0].isalpha():
+        return True
+    return False
+
+
 def rewrite_args(argv: list[str], cwd: Path) -> list[str]:
     """Map host paths under cwd to container paths under /data.
 
-    Any argv token that resolves to an existing host path under `cwd` is
-    rewritten to `/data/<relpath>`. Tokens that don't look like paths
-    pass through untouched.
+    Only tokens that look like filesystem paths (per `_looks_like_path`) and
+    resolve under cwd are rewritten. Subcommand names and flags pass through
+    untouched even if a same-named file lives in cwd.
     """
     rewritten = []
     for tok in argv:
-        candidate = Path(tok)
+        if not _looks_like_path(tok):
+            rewritten.append(tok)
+            continue
         try:
-            resolved = candidate.resolve()
+            resolved = Path(tok).resolve()
         except OSError:
             rewritten.append(tok)
             continue
         try:
             rel = resolved.relative_to(cwd)
         except ValueError:
+            # Path is outside cwd; the user must bind-mount it explicitly,
+            # or pass a path already in container-syntax (/data/...).
             rewritten.append(tok)
             continue
         rewritten.append("/data/" + rel.as_posix() if str(rel) != "." else "/data")

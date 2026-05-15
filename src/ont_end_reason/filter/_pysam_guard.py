@@ -14,11 +14,19 @@ from typing import Any
 from ..errors import IOError as OntIOError
 
 _HPC_HINT = (
-    "On Windows, ssh to Great Lakes and run there:\n"
-    "    ssh gregfar@greatlakes.arc-ts.umich.edu\n"
-    "    module load Bioinformatics samtools && conda activate ont-bio\n"
-    "    ont-end-reason {subcommand} ...\n"
-    "Or use the lab `ont-bio` conda env on a Linux/macOS host."
+    "Two options on Windows:\n"
+    "\n"
+    "  (1) Run locally via the bundled Docker wrapper (Docker Desktop required):\n"
+    "        python <repo>/docker/ont-end-reason-docker.py <subcommand> [args...]\n"
+    "      First run builds a ~320 MB Linux image with pysam pre-installed;\n"
+    "      subsequent runs are instant. Bind-mounts cwd to /data automatically.\n"
+    "\n"
+    "  (2) Run on Great Lakes HPC:\n"
+    "        ssh gregfar@greatlakes.arc-ts.umich.edu\n"
+    "        module load Bioinformatics samtools && conda activate ont-bio\n"
+    "        ont-end-reason <subcommand> ...\n"
+    "\n"
+    "Or use the lab `ont-bio` conda env on any Linux/macOS host."
 )
 
 _POSIX_HINT = (
