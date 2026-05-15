@@ -249,16 +249,57 @@ def classify_status(extraction: dict) -> str:
     return "FAIL"
 
 
-def scan() -> dict:
-    registry = Path.home() / "repos" / "ont-registry" / "experiments.yaml"
-    if not registry.exists():
-        print(f"ERROR: registry not found at {registry}", file=sys.stderr)
-        sys.exit(2)
-    data = yaml.safe_load(registry.read_text(encoding="utf-8"))
-    exps = data.get("experiments", [])
-    real = [e for e in exps if "/tmp/" not in str(e.get("location", "")) and "/workspace/" not in str(e.get("location", ""))]
+def _load_registry_v2(path: Path) -> list[dict]:
+    if not path.exists():
+        return []
+    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    out = []
+    for e in data.get("experiments", []):
+        loc = str(e.get("location", ""))
+        if "/tmp/" in loc or "/workspace/" in loc:
+            continue
+        out.append({**e, "_registry": "v2"})
+    return out
 
-    print(f"[scan] {len(real)} real experiments in registry (excluding test fixtures)")
+
+def _load_registry_legacy(path: Path) -> list[dict]:
+    """Coerce the legacy `~/.ont-registry/experiments.yaml` shape into the
+    same dict the v2 reader produces. Legacy uses `data_root` instead of
+    `location` and lacks `name`. Many entries are SMA-seq runs only the
+    cached registry knows about."""
+    if not path.exists():
+        return []
+    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    out = []
+    for e in data.get("experiments", []):
+        eid = e.get("id")
+        loc = e.get("data_root") or e.get("location") or ""
+        out.append({
+            "id": eid,
+            "name": eid,
+            "location": loc,
+            "platform": e.get("device", "unknown"),
+            "status_legacy": e.get("status"),
+            "total_reads_legacy": e.get("total_reads"),
+            "flow_cell_id": e.get("flow_cell_id"),
+            "_registry": "legacy",
+        })
+    return out
+
+
+def scan() -> dict:
+    v2 = _load_registry_v2(Path.home() / "repos" / "ont-registry" / "experiments.yaml")
+    legacy = _load_registry_legacy(Path.home() / ".ont-registry" / "experiments.yaml")
+    # Merge: prefer v2 entries when an id appears in both, else union.
+    by_id: dict[str, dict] = {}
+    for e in legacy:
+        by_id[e["id"]] = e
+    for e in v2:
+        by_id[e["id"]] = e  # v2 wins on collision
+    real = list(by_id.values())
+    real.sort(key=lambda e: e["id"])
+
+    print(f"[scan] merged registries: {len(v2)} v2 + {len(legacy)} legacy = {len(real)} unique experiments")
 
     results = []
     for e in real:
@@ -269,8 +310,11 @@ def scan() -> dict:
             "id": eid,
             "name": e.get("name", eid),
             "registry_location": loc,
+            "registry_source": e.get("_registry", "?"),
             "local_path": str(local_path),
             "platform": e.get("platform", "unknown"),
+            "status_legacy": e.get("status_legacy"),
+            "total_reads_legacy": e.get("total_reads_legacy"),
             "reachable": local_path.exists(),
         }
         if not local_path.exists():
@@ -299,7 +343,7 @@ def scan() -> dict:
 
     return {
         "scan_time": datetime.datetime.now().isoformat(timespec="seconds"),
-        "registry": str(registry),
+        "registry": "merged: ~/repos/ont-registry + ~/.ont-registry",
         "total_real": len(real),
         "experiments": results,
     }
