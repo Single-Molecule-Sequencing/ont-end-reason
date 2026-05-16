@@ -1,0 +1,44 @@
+# THEME-BEGIN: lab-wiki shared Pages workflow (do not edit between markers)
+name: Deploy ont-end-reason front-door to Pages
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - 'docs/**'
+      - 'WIKI.md'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Assemble site
+        run: |
+          mkdir -p _site
+          # Copy WIKI.md or docs/wiki/* and the shared theme assets.
+          if [ -f WIKI.md ]; then cp WIKI.md _site/index.md; fi
+          if [ -d docs/wiki ]; then cp -r docs/wiki/. _site/; fi
+          if [ -f docs/lab-theme.css ]; then cp docs/lab-theme.css _site/; fi
+          if [ -f docs/lab-nav.html ]; then cp docs/lab-nav.html _site/; fi
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+# THEME-END
