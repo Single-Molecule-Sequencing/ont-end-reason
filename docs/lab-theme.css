@@ -1,0 +1,33 @@
+/* THEME-BEGIN: lab-wiki shared theme */
+:root {
+  --lab-fg: #1f2328;
+  --lab-bg: #ffffff;
+  --lab-accent: #0969da;
+  --lab-muted: #57606a;
+  --lab-border: #d0d7de;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue",
+               Arial, sans-serif;
+  color: var(--lab-fg);
+  background: var(--lab-bg);
+  max-width: 880px;
+  margin: 2rem auto;
+  padding: 0 1.25rem;
+  line-height: 1.6;
+}
+
+h1, h2, h3 { color: var(--lab-fg); }
+a          { color: var(--lab-accent); }
+
+nav.lab-nav {
+  border-bottom: 1px solid var(--lab-border);
+  padding: 0.5rem 0;
+  margin-bottom: 1.5rem;
+  font-size: 0.92rem;
+  color: var(--lab-muted);
+}
+nav.lab-nav a { text-decoration: none; }
+nav.lab-nav a:hover { text-decoration: underline; }
+/* THEME-END */
