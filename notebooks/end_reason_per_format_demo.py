@@ -16,6 +16,7 @@ The dashboard auto-opens in your default browser on Windows / macOS.
 
 from __future__ import annotations
 
+import contextlib
 import datetime
 import json
 import platform
@@ -30,7 +31,6 @@ SRC = REPO_ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from ont_end_reason.codes import CODES  # noqa: E402
 from ont_end_reason.io.readers import (  # noqa: E402
     detect_format,
     extract_from_fast5,
@@ -122,7 +122,7 @@ def synthesize_single_fast5(src: Path, dst: Path) -> None:
     with h5py.File(src, "r") as fin, h5py.File(dst, "w") as fout:
         for k, v in fin.attrs.items():
             fout.attrs[k] = v
-        first = list(fin.keys())[0]
+        first = next(iter(fin.keys()))
         fin.copy(first, fout, name="read")
 
 
@@ -161,7 +161,7 @@ def run_extraction(fmt: str, path: Path) -> dict:
     out: dict = {"format": fmt, "path": str(path), "size_bytes": path.stat().st_size}
     try:
         out["detect_format"] = detect_format(path)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         out["detect_format_error"] = repr(exc)
         return out
     try:
@@ -173,7 +173,7 @@ def run_extraction(fmt: str, path: Path) -> dict:
             recs = list(extract_from_summary(path, quick=True, max_reads=10_000))
         else:
             raise ValueError(f"unknown fmt {fmt}")
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         out["extraction_error"] = repr(exc)
         return out
     out["n_records"] = len(recs)
@@ -347,10 +347,8 @@ def main() -> int:
         subprocess.Popen(["open", str(out_html)])
     else:
         # Linux — xdg-open if available, else skip
-        try:
+        with contextlib.suppress(FileNotFoundError):
             subprocess.Popen(["xdg-open", str(out_html)])
-        except FileNotFoundError:
-            pass
 
     return 0
 

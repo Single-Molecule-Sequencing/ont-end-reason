@@ -42,7 +42,6 @@ except ImportError:
 from ont_end_reason.codes import CODES  # noqa: E402
 from ont_end_reason.errors import IOError as OntIOError  # noqa: E402
 from ont_end_reason.io.readers import (  # noqa: E402
-    detect_format,
     extract_from_fast5,
     extract_from_pod5,
     extract_from_summary,
@@ -144,7 +143,7 @@ def _is_cloud_only(path: Path) -> bool:
         if attrs == -1:
             return False
         return bool(attrs & (0x1000 | 0x00400000))
-    except Exception:  # noqa: BLE001
+    except Exception:
         return False
 
 
@@ -218,7 +217,7 @@ def extract_end_reason(path: Path, max_reads: int = 10_000) -> dict:
     except OntIOError as exc:
         out["error"] = repr(exc)
         return out
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         out["error"] = f"{type(exc).__name__}: {exc}"
         return out
 

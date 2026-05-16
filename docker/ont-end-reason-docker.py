@@ -22,7 +22,6 @@ container (useful for poking around).
 
 from __future__ import annotations
 
-import os
 import shutil
 import subprocess
 import sys
@@ -68,9 +67,7 @@ def _looks_like_path(tok: str) -> bool:
     if "/" in tok or "\\" in tok:
         return True
     # Windows drive letter: C:..., D:\..., etc.
-    if len(tok) >= 2 and tok[1] == ":" and tok[0].isalpha():
-        return True
-    return False
+    return len(tok) >= 2 and tok[1] == ":" and tok[0].isalpha()
 
 
 def rewrite_args(argv: list[str], cwd: Path) -> list[str]:
