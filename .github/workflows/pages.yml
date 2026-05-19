@@ -16,7 +16,28 @@ concurrency:
   group: pages
   cancel-in-progress: false
 jobs:
+  preflight:
+    # Skip the shared Pages workflow entirely if the repo has opted out by
+    # checking in a `.no-shared-pages` sentinel file at its root. Repos with
+    # their own Pages deploy workflow (e.g. lab-system's deploy-pages.yml)
+    # should opt out so they don't race the shared workflow on `concurrency:
+    # group: pages`. See lab-wiki issue #43.
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.optout.outputs.skip }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: optout
+        run: |
+          if [ -f .no-shared-pages ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Shared Pages workflow skipped — .no-shared-pages marker present"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
   build:
+    needs: preflight
+    if: needs.preflight.outputs.skip != 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -33,7 +54,8 @@ jobs:
         with:
           path: _site
   deploy:
-    needs: build
+    needs: [preflight, build]
+    if: needs.preflight.outputs.skip != 'true'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
