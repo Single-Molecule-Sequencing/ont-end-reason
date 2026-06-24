@@ -15,7 +15,7 @@ Discover, tag, filter, analyse, and visualise read-termination patterns.
 
 ### 🚀 [**→ Interactive dashboard & tutorials**](https://silver-adventure-o322543.pages.github.io/)
 
-Companion to the [end-reason paper](https://github.com/Single-Molecule-Sequencing/end-reason-paper).
+Companion to the [end-reason paper](https://github.com/Single-Molecule-Sequencing/end_reason_6_5_26).
 
 </div>
 
@@ -51,7 +51,7 @@ paper into a single PyPI-installable CLI, including the paper's novel
 *posterior length model* for adaptive-sampling-truncated reads.
 
 Before this tool, the analyses lived in scattered scripts inside
-[End_Reason_Manuscript/pipeline/bin/](https://github.com/Single-Molecule-Sequencing/End_Reason_Manuscript)
+[End_Reason_Manuscript/pipeline/bin/](https://github.com/Single-Molecule-Sequencing/end_reason_6_5_26)
 (now archived). Every script was promoted to this repo with provenance
 headers crediting commit `b47166a` of the source. The package is the
 canonical implementation going forward.
@@ -320,10 +320,10 @@ Spec: [docs/superpowers/specs/2026-05-12-end-reason-atlas-design.md](docs/superp
 
 | Repo | How it integrates |
 |---|---|
-| [end-reason-paper](https://github.com/Single-Molecule-Sequencing/end-reason-paper) | Companion paper. Claim atoms (`results.alignment_rate_filtered`, `results.snv_f1_filtered`, etc.) pin to this tool for reproducibility. |
+| [end-reason-paper](https://github.com/Single-Molecule-Sequencing/end_reason_6_5_26) | Companion paper. Claim atoms (`results.alignment_rate_filtered`, `results.snv_f1_filtered`, etc.) pin to this tool for reproducibility. |
 | [ont-ecosystem](https://github.com/Single-Molecule-Sequencing/ont-ecosystem) | Lab Claude Code skills `/end-reason` and `/end-reason-filter` will become thin wrappers that `pip install ont-end-reason` (tracked in [issue #6](https://github.com/Single-Molecule-Sequencing/ont-end-reason/issues/6)). |
-| [lab-onboarding](https://github.com/Single-Molecule-Sequencing/lab-onboarding) | Bundled in the canonical lab-repo manifest. Cloned automatically by `bash wsl/bootstrap.sh` on every new lab device. |
-| [End_Reason_Manuscript](https://github.com/Single-Molecule-Sequencing/End_Reason_Manuscript) | **Archived.** Each script in this repo carries a provenance header crediting commit `b47166a` of that source. |
+| [lab-onboarding](https://github.com/Single-Molecule-Sequencing/lab-system) | Bundled in the canonical lab-repo manifest. Cloned automatically by `bash wsl/bootstrap.sh` on every new lab device. |
+| [End_Reason_Manuscript](https://github.com/Single-Molecule-Sequencing/end_reason_6_5_26) | **Archived.** Each script in this repo carries a provenance header crediting commit `b47166a` of that source. |
 | [smaseq-qc](https://github.com/Single-Molecule-Sequencing/smaseq-qc) | Optional dependency for `analyze sma-metrics`. Tool detects-and-skips when missing. |
 
 ---
@@ -354,7 +354,7 @@ If you use `ont-end-reason` in published work, please cite the companion paper:
 Athey BD et al. (in preparation). End reason filtering for accurate analysis
 of Oxford Nanopore sequencing data. Single-Molecule-Sequencing Lab,
 University of Michigan.
-https://github.com/Single-Molecule-Sequencing/end-reason-paper
+https://github.com/Single-Molecule-Sequencing/end_reason_6_5_26
 ```
 
 Machine-readable citation metadata is in [`CITATION.cff`](CITATION.cff).
