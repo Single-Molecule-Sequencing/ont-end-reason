@@ -44,18 +44,19 @@ def _load_summary_map(summary_path: Path) -> dict[str, str]:
 
     out: dict[str, str] = {}
     try:
-        for chunk in pd.read_csv(
+        with pd.read_csv(
             summary_path,
             sep="\t",
             usecols=["read_id", "end_reason"],
             chunksize=200_000,
             low_memory=False,
-        ):
-            for row in chunk.itertuples(index=False):
-                er = str(row.end_reason).strip().lower()
-                # Coerce to short. Unknown values stay as raw upper-case for visibility.
-                short = CODES.get(er) or (er.upper() if er else "UNK")
-                out[str(row.read_id)] = short
+        ) as chunks:
+            for chunk in chunks:
+                for row in chunk.itertuples(index=False):
+                    er = str(row.end_reason).strip().lower()
+                    # Reject unmapped values before opening the output BAM.
+                    short = to_short(er)
+                    out[str(row.read_id)] = short
     except (OSError, ValueError) as exc:
         raise OntIOError(f"Failed to read summary {summary_path}: {exc}") from exc
     return out
@@ -146,6 +147,3 @@ def tag_bam(
 def supported_end_reasons() -> Iterable[str]:
     """Convenience accessor for CLI help text."""
     return sorted(CODES.values())
-
-
-_ = to_short  # keep imported (used by callers in higher-level CLI)

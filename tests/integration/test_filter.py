@@ -137,6 +137,43 @@ def test_tag_rejects_invalid_tag_name(tmp_path: Path) -> None:
         tag_bam(FIXTURE_SUMMARY, raw, tmp_path / "out.bam", tag_name="ERR")
 
 
+def test_tag_fbg38108_observed_reasons(tmp_path: Path) -> None:
+    """Exercise every reason in FBG38108's end_reason_values.txt (2026-09-29)."""
+    observed = {
+        "analysis_config_change": "ACC",
+        "device_data_error": "DDE",
+        "mux_change": "MC",
+        "signal_negative": "SN",
+        "signal_positive": "SP",
+        "unblock_mux_change": "UMC",
+    }
+    summary = tmp_path / "sequencing_summary.txt"
+    summary.write_text(
+        "read_id\tend_reason\n" + "".join(f"r{i}\t{reason}\n" for i, reason in enumerate(observed)),
+        encoding="utf-8",
+    )
+    ids = [f"r{i}" for i in range(len(observed))]
+    raw = tmp_path / "raw.bam"
+    _make_unaligned_bam(raw, ids)
+    output = tmp_path / "tagged.bam"
+    result = tag_bam(summary, raw, output)
+    assert result.tagged_reads == len(observed)
+    assert result.missing_reads == 0
+    with pysam.AlignmentFile(str(output), "rb", check_sq=False) as bam:
+        assert [read.get_tag("ER") for read in bam.fetch(until_eof=True)] == list(observed.values())
+
+
+def test_tag_rejects_unmapped_reason_before_creating_output(tmp_path: Path) -> None:
+    summary = tmp_path / "sequencing_summary.txt"
+    summary.write_text("read_id\tend_reason\nr0\tbogus_reason\n", encoding="utf-8")
+    raw = tmp_path / "raw.bam"
+    _make_unaligned_bam(raw, ["r0"])
+    output = tmp_path / "tagged.bam"
+    with pytest.raises(OntIOError, match=r"Unknown end_reason.*bogus_reason"):
+        tag_bam(summary, raw, output)
+    assert not output.exists()
+
+
 def test_filter_rejects_empty_keep(tmp_path: Path) -> None:
     raw = tmp_path / "raw.bam"
     _make_unaligned_bam(raw, _read_first_n_ids(FIXTURE_SUMMARY, 1))
