@@ -17,7 +17,7 @@ from typing import Any
 
 import structlog
 
-from ..codes import CODES
+from ..codes import CODES, to_full
 from ..errors import IOError as OntIOError
 from .manifest import ReadRecord
 
@@ -42,7 +42,7 @@ def _normalise_end_reason(reason: Any) -> str:
     # Enum members have a .name attribute; use it directly when present
     name_attr = getattr(reason, "name", None)
     if name_attr and isinstance(name_attr, str):
-        return name_attr.lower()
+        return to_full(name_attr)
     s = str(reason).strip()
     # Strip surrounding parens/angle-brackets and pod5's NamedTuple cruft
     # Examples we want to reduce to the bare name:
@@ -51,12 +51,12 @@ def _normalise_end_reason(reason: Any) -> str:
     #   "EndReason.signal_positive"
     match = re.search(r"EndReason\.(\w+)", s)
     if match:
-        return match.group(1).lower()
+        return to_full(match.group(1))
     # Fallback: take whatever follows the last dot, strip non-word chars
     if "." in s:
         s = s.rsplit(".", 1)[-1]
     s = re.sub(r"[^\w]", "", s).lower()
-    return s or "unknown"
+    return to_full(s or "unknown")
 
 
 def detect_format(path: str | Path) -> str:
@@ -218,7 +218,7 @@ def extract_from_summary(
 
     n = 0
     try:
-        for chunk in pd.read_csv(
+        with pd.read_csv(
             p,
             sep="\t",
             usecols=lambda c: (
@@ -226,20 +226,21 @@ def extract_from_summary(
             ),
             chunksize=chunk_size,
             low_memory=False,
-        ):
-            for row in chunk.itertuples(index=False):
-                er = _normalise_end_reason(getattr(row, "end_reason", "unknown"))
-                yield ReadRecord(
-                    read_id=str(row.read_id),
-                    end_reason=er,
-                    end_reason_short=CODES.get(er),
-                    length=int(getattr(row, "sequence_length_template", 0) or 0) or None,
-                    quality=float(getattr(row, "mean_qscore_template", 0) or 0) or None,
-                    source_file=str(p),
-                    source_format="summary",
-                )
-                n += 1
-                if quick and n >= max_reads:
-                    return
+        ) as chunks:
+            for chunk in chunks:
+                for row in chunk.itertuples(index=False):
+                    er = _normalise_end_reason(getattr(row, "end_reason", "unknown"))
+                    yield ReadRecord(
+                        read_id=str(row.read_id),
+                        end_reason=er,
+                        end_reason_short=CODES.get(er),
+                        length=int(getattr(row, "sequence_length_template", 0) or 0) or None,
+                        quality=float(getattr(row, "mean_qscore_template", 0) or 0) or None,
+                        source_file=str(p),
+                        source_format="summary",
+                    )
+                    n += 1
+                    if quick and n >= max_reads:
+                        return
     except (OSError, ValueError) as exc:
         raise OntIOError(f"Failed to read summary {p}: {exc}") from exc

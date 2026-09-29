@@ -23,9 +23,9 @@ pytestmark = pytest.mark.fast
 
 
 class TestCanonicalSet:
-    def test_exactly_seven_codes(self) -> None:
-        assert len(CODES) == 7
-        assert len(NAMES) == 7
+    def test_exactly_nine_codes(self) -> None:
+        assert len(CODES) == 9
+        assert len(NAMES) == 9
 
     def test_codes_and_names_are_bijective(self) -> None:
         for full, short in CODES.items():
@@ -38,11 +38,11 @@ class TestCanonicalSet:
         # Read the paper, bump the claim atoms, then update this test.
         assert frozenset({"SP"}) == RECOMMENDED_KEEP
 
-    def test_failed_is_signal_negative_only(self) -> None:
-        assert frozenset({"SN"}) == FAILED
+    def test_failed_membership(self) -> None:
+        assert frozenset({"SN", "DDE"}) == FAILED
 
     def test_truncated_membership(self) -> None:
-        assert frozenset({"UMC", "MC", "DUMC", "PART"}) == TRUNCATED
+        assert frozenset({"UMC", "MC", "DUMC", "PART", "ACC"}) == TRUNCATED
 
     def test_class_disjoint(self) -> None:
         # Every code belongs to exactly one class.
@@ -97,6 +97,16 @@ class TestCoercion:
 
 
 class TestClassify:
+    @pytest.mark.parametrize(
+        ("reason", "short", "category"),
+        [("device_data_error", "DDE", "failed"), ("analysis_config_change", "ACC", "truncated")],
+    )
+    def test_additional_recorded_reasons(self, reason: str, short: str, category: str) -> None:
+        assert to_short(reason) == short
+        assert to_full(short) == reason
+        assert classify(reason) == category
+        assert short not in RECOMMENDED_KEEP
+
     def test_sp_keep(self) -> None:
         assert classify("SP") == "keep"
         assert classify("signal_positive") == "keep"

@@ -1,6 +1,6 @@
 """End reason code taxonomy — single source of truth.
 
-The lab uses 7 standard 2-4 letter abbreviations across all filtering and
+The lab uses standard 2-4 letter abbreviations across all filtering and
 analysis tools. This module is the SSOT for the full-name ↔ abbreviation
 mapping and the keep/truncated/failed/unknown classification.
 
@@ -23,6 +23,8 @@ CODES: Final[dict[str, str]] = {
     "data_service_unblock_mux_change": "DUMC",
     "unknown": "UNK",
     "partial": "PART",
+    "device_data_error": "DDE",
+    "analysis_config_change": "ACC",
 }
 
 # Reverse: short code → full name (for human-readable output)
@@ -34,10 +36,10 @@ RECOMMENDED_KEEP: Final[frozenset[str]] = frozenset({"SP"})
 
 # Reads with these end_reasons are usable but truncated; keep only if you
 # explicitly want to study what was rejected.
-TRUNCATED: Final[frozenset[str]] = frozenset({"UMC", "MC", "DUMC", "PART"})
+TRUNCATED: Final[frozenset[str]] = frozenset({"UMC", "MC", "DUMC", "PART", "ACC"})
 
 # Reads with these end_reasons should ALWAYS be filtered.
-FAILED: Final[frozenset[str]] = frozenset({"SN"})
+FAILED: Final[frozenset[str]] = frozenset({"SN", "DDE"})
 
 # Reason was not recorded — investigate, don't auto-filter.
 UNKNOWN_STATES: Final[frozenset[str]] = frozenset({"UNK"})

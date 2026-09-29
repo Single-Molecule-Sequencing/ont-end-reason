@@ -9,10 +9,12 @@ normalisation behaviour so we never regress that smoke-test bug.
 from __future__ import annotations
 
 from enum import IntEnum
+from pathlib import Path
 
 import pytest
 
-from ont_end_reason.io.readers import _normalise_end_reason
+from ont_end_reason.errors import IOError as OntIOError
+from ont_end_reason.io.readers import _normalise_end_reason, extract_from_summary
 
 pytestmark = pytest.mark.fast
 
@@ -44,9 +46,30 @@ class TestNormaliseEndReason:
     def test_none(self) -> None:
         assert _normalise_end_reason(None) == "unknown"
 
-    def test_unknown_passes_through(self) -> None:
-        # Unrecognised values stay lowercased so downstream can flag them
-        assert _normalise_end_reason("custom_value") == "custom_value"
+    @pytest.mark.parametrize(
+        "reason", ["bogus_reason", "EndReason.bogus_reason", "<EndReason.bogus_reason: 99>"]
+    )
+    def test_unrecognized_reason_raises(self, reason: str) -> None:
+        with pytest.raises(ValueError, match="Unknown end_reason"):
+            _normalise_end_reason(reason)
+
+    def test_unrecognized_enum_raises(self) -> None:
+        class UnknownReason(IntEnum):
+            bogus_reason = 99
+
+        with pytest.raises(ValueError, match="Unknown end_reason"):
+            _normalise_end_reason(UnknownReason.bogus_reason)
+
+    @pytest.mark.parametrize("reason", ["device_data_error", "analysis_config_change"])
+    def test_additional_recorded_reasons(self, reason: str) -> None:
+        assert _normalise_end_reason(reason) == reason
 
     def test_uppercase_normalised(self) -> None:
         assert _normalise_end_reason("SIGNAL_POSITIVE") == "signal_positive"
+
+
+def test_summary_rejects_unrecognized_reason(tmp_path: Path) -> None:
+    summary = tmp_path / "sequencing_summary.txt"
+    summary.write_text("read_id\tend_reason\nr0\tbogus_reason\n", encoding="utf-8")
+    with pytest.raises(OntIOError, match=r"Unknown end_reason.*bogus_reason"):
+        list(extract_from_summary(summary))
