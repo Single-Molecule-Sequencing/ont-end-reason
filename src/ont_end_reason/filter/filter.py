@@ -35,8 +35,9 @@ from pathlib import Path
 import structlog
 
 from .._lab_bridge import import_lab_module
-from ..codes import parse_keep_list
+from ..codes import parse_keep_list, to_short
 from ..errors import IOError as OntIOError
+from .output import new_output
 
 log = structlog.get_logger(__name__)
 
@@ -91,7 +92,7 @@ def filter_bam(
     FilterResult
         Summary counts and the resolved keep-list.
     """
-    keep_set = parse_keep_list(keep) if isinstance(keep, str) else set(keep)
+    keep_set = parse_keep_list(keep) if isinstance(keep, str) else {to_short(v) for v in keep}
     if not keep_set:
         raise ValueError("keep is empty; nothing to retain")
 
@@ -99,29 +100,30 @@ def filter_bam(
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    if threads >= 2:
-        if _bam_size_exceeds(bam_path, MIN_READS_FOR_PARALLEL):
-            return _filter_parallel(
-                bam_path,
-                output_path,
-                keep_set,
-                tag_name=tag_name,
+    with new_output(output_path, inputs=[bam_path]) as staged:
+        if threads >= 2:
+            if _bam_size_exceeds(bam_path, MIN_READS_FOR_PARALLEL):
+                return _filter_parallel(
+                    bam_path,
+                    staged,
+                    keep_set,
+                    tag_name=tag_name,
+                    threads=threads,
+                    shard_size=shard_size,
+                )
+            log.info(
+                "small input — falling back to sequential",
                 threads=threads,
-                shard_size=shard_size,
+                min_for_parallel=MIN_READS_FOR_PARALLEL,
             )
-        log.info(
-            "small input — falling back to sequential",
-            threads=threads,
-            min_for_parallel=MIN_READS_FOR_PARALLEL,
-        )
 
-    return _filter_sequential(
-        bam_path,
-        output_path,
-        keep_set,
-        tag_name=tag_name,
-        threads=max(1, threads),
-    )
+        return _filter_sequential(
+            bam_path,
+            staged,
+            keep_set,
+            tag_name=tag_name,
+            threads=max(1, threads),
+        )
 
 
 def _filter_sequential(
@@ -153,9 +155,9 @@ def _filter_sequential(
                 n_input += 1
                 try:
                     er_value = read.get_tag(tag_name)
-                except KeyError:
-                    continue
-                if str(er_value) in keep_set:
+                except KeyError as exc:
+                    raise OntIOError(f"Missing {tag_name} tag on {read.query_name}") from exc
+                if to_short(str(er_value)) in keep_set:
                     bam_out.write(read)
                     n_kept += 1
     except OSError as exc:
@@ -194,21 +196,20 @@ def _worker_filter_shard(
     bam_in = pysam.AlignmentFile(bam_path, "rb", check_sq=False)
     bam_in.seek(start_voff)
     try:
-        bam_out = pysam.AlignmentFile(out_path, "wb", template=bam_in)
-        for read in bam_in:
-            # tell() reports the NEXT read's voff; the next worker's
-            # seek(end_voff) lands on that record, so we stop here.
-            if end_voff is not None and bam_in.tell() > end_voff:
-                break
-            n_input += 1
-            try:
-                er_value = read.get_tag(tag_name)
-            except KeyError:
-                continue
-            if str(er_value) in keep_set:
-                bam_out.write(read)
-                n_kept += 1
-        bam_out.close()
+        with pysam.AlignmentFile(out_path, "wb", template=bam_in) as bam_out:
+            for read in bam_in:
+                # tell() reports the NEXT read's voff; the next worker's
+                # seek(end_voff) lands on that record, so we stop here.
+                if end_voff is not None and bam_in.tell() > end_voff:
+                    break
+                n_input += 1
+                try:
+                    er_value = read.get_tag(tag_name)
+                except KeyError as exc:
+                    raise OntIOError(f"Missing {tag_name} tag on {read.query_name}") from exc
+                if to_short(str(er_value)) in keep_set:
+                    bam_out.write(read)
+                    n_kept += 1
     finally:
         bam_in.close()
     return out_path, n_input, n_kept

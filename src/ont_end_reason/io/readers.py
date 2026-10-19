@@ -11,7 +11,7 @@ instead of plain dicts and ValueError.
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from pathlib import Path
 from typing import Any
 
@@ -88,11 +88,18 @@ def detect_format(path: str | Path) -> str:
 
 
 def extract_from_pod5(
+    path: str | Path, *, quick: bool = False, max_reads: int = 10_000
+) -> list[ReadRecord]:
+    """Compatibility list reader; strict tagging consumes the streaming iterator."""
+    return list(iter_pod5_metadata(path, quick=quick, max_reads=max_reads))
+
+
+def iter_pod5_metadata(
     path: str | Path,
     *,
     quick: bool = False,
     max_reads: int = 10_000,
-) -> list[ReadRecord]:
+) -> Iterator[ReadRecord]:
     """Pull end_reason metadata from a POD5 file or directory of POD5 files.
 
     If `path` is a directory, every `*.pod5` under it is read. With
@@ -108,7 +115,7 @@ def extract_from_pod5(
     if not files:
         raise OntIOError(f"No POD5 files found under {p}")
 
-    out: list[ReadRecord] = []
+    count = 0
     for f in files:
         try:
             from pod5 import Reader as Pod5Reader  # type: ignore[import-not-found]
@@ -119,22 +126,19 @@ def extract_from_pod5(
             with Pod5Reader(str(f)) as reader:
                 for read in reader.reads():
                     er = _normalise_end_reason(getattr(read, "end_reason", "unknown"))
-                    out.append(
-                        ReadRecord(
-                            read_id=str(read.read_id),
-                            end_reason=er,
-                            end_reason_short=CODES.get(er),
-                            source_file=str(f),
-                            source_format="pod5",
-                        )
+                    yield ReadRecord(
+                        read_id=str(read.read_id),
+                        end_reason=er,
+                        end_reason_short=CODES.get(er),
+                        source_file=str(f),
+                        source_format="pod5",
                     )
-                    if quick and len(out) >= max_reads:
-                        return out
+                    count += 1
+                    if quick and count >= max_reads:
+                        return
         except Exception as exc:
             log.warning("pod5 read failed", path=str(f), error=str(exc))
             raise OntIOError(f"Failed to read POD5 {f}: {exc}") from exc
-
-    return out
 
 
 def extract_from_fast5(
