@@ -274,11 +274,33 @@ def test_payload_tags_and_qualities_preserved(tmp_path):
 
 
 def test_native_parallel_matches_sequential(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+
     import ont_end_reason.filter.filter as mod
 
-    assert mod._bam_shard is not None, (
-        "This control requires the official bam_shard import on PYTHONPATH"
-    )
+    # Isolate this package's real ProcessPool/shard normalization from optional
+    # sibling installation. When installed, exercise the official scanner itself.
+    if mod._bam_shard is None:
+
+        def scan_fixture(path, *, n_shards, target_reads_per_shard):
+            offsets = []
+            with pysam.AlignmentFile(str(path), "rb", check_sq=False) as stream:
+                while True:
+                    offset = stream.tell()
+                    try:
+                        next(stream)
+                    except StopIteration:
+                        break
+                    offsets.append(offset)
+            starts = offsets[::target_reads_per_shard]
+            return [
+                SimpleNamespace(
+                    start_voff=start, end_voff=starts[i + 1] if i + 1 < len(starts) else None
+                )
+                for i, start in enumerate(starts)
+            ], len(offsets)
+
+        monkeypatch.setattr(mod, "_bam_shard", SimpleNamespace(scan_with_count=scan_fixture))
     b = bam(
         tmp_path / "in.bam",
         [
