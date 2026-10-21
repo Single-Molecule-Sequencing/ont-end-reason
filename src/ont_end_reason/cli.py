@@ -129,7 +129,12 @@ def tag(summary: str, bam: str, out: str, tag_name: str) -> None:
 @click.option("--pod5", "pod5_path", required=True, type=click.Path(exists=True))
 @click.option("--bam", required=True, type=click.Path(exists=True))
 @click.option("--out", required=True, type=click.Path())
-def tag_pod5_command(pod5_path: str, bam: str, out: str) -> None:
+@click.option(
+    "--scratch-dir",
+    type=click.Path(exists=True, file_okay=False, writable=True),
+    help="Directory for the temporary SQLite index only; defaults beside output.",
+)
+def tag_pod5_command(pod5_path: str, bam: str, out: str, scratch_dir: str | None) -> None:
     """Strict simplex parent-aware POD5 tagging; refuses missing/conflicting lineage."""
     import json
     from dataclasses import asdict
@@ -137,7 +142,7 @@ def tag_pod5_command(pod5_path: str, bam: str, out: str) -> None:
     from .filter.parent_tag import tag_pod5
 
     try:
-        result = tag_pod5(pod5_path, bam, out)
+        result = tag_pod5(pod5_path, bam, out, scratch_dir=scratch_dir)
     except (OntEndReasonError, ValueError, OSError) as exc:
         _die(str(exc))
     click.echo(json.dumps(asdict(result)))

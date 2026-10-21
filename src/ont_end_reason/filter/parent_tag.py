@@ -50,13 +50,18 @@ def _files(path: Path) -> list[Path]:
 
 
 def tag_pod5(
-    pod5_path: str | Path, bam_path: str | Path, output_path: str | Path
+    pod5_path: str | Path,
+    bam_path: str | Path,
+    output_path: str | Path,
+    *,
+    scratch_dir: str | Path | None = None,
 ) -> ParentTagResult:
     """Tag every BAM record through raw parent UUID, failing closed on ambiguity.
 
     Supports simplex (dx absent, 0 or -1); duplex dx=1 is unsupported. pi must
     identify an actual raw record. Same-ID source duplicates must agree. Temporary
-    SQLite and BAM files are placed beside the requested output, never in /tmp.
+    SQLite defaults beside the output; explicit scratch_dir relocates only the
+    temporary index. Atomic BAM staging always remains beside the output.
     Existing output paths are refused. No records are dropped or deduplicated.
     Source metadata must remain stable; full source hash manifests are the caller's
     execution-provenance responsibility.
@@ -70,7 +75,10 @@ def tag_pod5(
     bam_stamp = _stamp(bam_path)
     with (
         new_output(output_path) as staged,
-        tempfile.TemporaryDirectory(prefix="parent-index-", dir=staged.parent) as tmp,
+        tempfile.TemporaryDirectory(
+            prefix="parent-index-",
+            dir=Path(scratch_dir) if scratch_dir is not None else staged.parent,
+        ) as tmp,
         closing(sqlite3.connect(Path(tmp) / "parents.sqlite")) as db,
     ):
         db.execute("PRAGMA cache_size=-65536")
