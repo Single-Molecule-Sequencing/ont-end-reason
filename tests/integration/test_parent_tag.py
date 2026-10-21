@@ -315,3 +315,70 @@ def test_native_parallel_matches_sequential(tmp_path, monkeypatch):
     assert [r.to_string() for r in records(tmp_path / "one.bam")] == [
         r.to_string() for r in records(tmp_path / "many.bam")
     ]
+
+
+@pytest.mark.parametrize("fail", [False, True])
+def test_explicit_scratch_only_moves_index_and_cleans_up(tmp_path, monkeypatch, fail):
+    from contextlib import contextmanager
+    from pathlib import Path
+
+    from ont_end_reason.filter import parent_tag as subject
+
+    scratch = tmp_path / "scratch"
+    scratch.mkdir()
+    output_dir = tmp_path / "outputs"
+    output_dir.mkdir()
+    p = raw(tmp_path / "raw.pod5", [(P, "signal_positive")])
+    b = bam(tmp_path / "in.bam", [(X if fail else P, {})])
+    out = output_dir / "tagged.bam"
+    seen = []
+    connect = subject.sqlite3.connect
+
+    def capture(path, *args, **kwargs):
+        seen.append(Path(path))
+        assert Path(path).is_relative_to(scratch)
+        return connect(path, *args, **kwargs)
+
+    monkeypatch.setattr(subject.sqlite3, "connect", capture)
+    original = subject.new_output
+
+    @contextmanager
+    def staged(path):
+        with original(path) as target:
+            assert target.parent.parent == output_dir
+            yield target
+
+    monkeypatch.setattr(subject, "new_output", staged)
+    if fail:
+        with pytest.raises(OntIOError, match="Raw parent missing"):
+            tag_pod5(p, b, out, scratch_dir=scratch)
+        assert not out.exists()
+    else:
+        assert tag_pod5(p, b, out, scratch_dir=scratch).tagged_reads == 1
+        assert records(out)[0].get_tag("ER") == "SP"
+    assert seen and not list(scratch.iterdir())
+    assert not any(x.name != "tagged.bam" for x in output_dir.iterdir())
+
+
+def test_cli_scratch_and_missing_directory(tmp_path):
+    p = raw(tmp_path / "raw.pod5", [(P, "signal_positive")])
+    b = bam(tmp_path / "in.bam", [(P, {})])
+    scratch = tmp_path / "scratch"
+    out = tmp_path / "out.bam"
+    args = [
+        "tag-pod5",
+        "--pod5",
+        str(p),
+        "--bam",
+        str(b),
+        "--out",
+        str(out),
+        "--scratch-dir",
+        str(scratch),
+    ]
+    refused = CliRunner().invoke(main, args)
+    assert refused.exit_code != 0 and not out.exists()
+    scratch.mkdir()
+    passed = CliRunner().invoke(main, args)
+    assert passed.exit_code == 0, passed.output
+    assert records(out)[0].get_tag("ER") == "SP"
